@@ -10,7 +10,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Project Scaffold & Database** — Working Next.js 15 project with Supabase schema, RLS, and all lib/ modules stubbed
+- [x] **Phase 1: Project Scaffold & Database** — Working Next.js 15 project with Supabase schema, RLS, and all lib/ modules stubbed
 - [ ] **Phase 2: Banner API Integration** — Working MSU Banner scraper that returns seat availability for any CRN
 - [ ] **Phase 3: Alert System & Cron Worker** — Complete alert creation flow + working cron that checks seats and sends SMS
 - [ ] **Phase 4: Frontend Pages** — Three pages matching the design spec — mobile-first, maroon brand, functional forms
@@ -50,8 +50,8 @@
 
 **Plans**: 2 plans
 Plans:
-- [ ] 01-1-project-scaffold.md — Scaffold Next.js 15, install all dependencies, configure Tailwind maroon token and next.config.ts
-- [ ] 01-2-supabase-schema-clients.md — Create Supabase project, apply schema migration, write all lib/ client modules and stubs
+- [x] 01-1-project-scaffold.md — Scaffold Next.js 15, install all dependencies, configure Tailwind maroon token and next.config.ts
+- [x] 01-2-supabase-schema-clients.md — Create Supabase project, apply schema migration, write all lib/ client modules and stubs
 
 **UI hint**: yes
 
@@ -81,7 +81,10 @@ Plans:
   4. An invalid CRN (one not matching any section in the course results) returns a structured error response, not an unhandled exception
   5. The term code `202630` (Fall 2026) is used by default and is defined in exactly one place in the codebase
 
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 02-01-PLAN.md — Implement lib/constants.ts + lib/banner.ts: session establishment, seat fetch, CRN filter, session expiry recovery
+- [ ] 02-02-PLAN.md — Create GET /api/course/[crn] route: Banner fetch, Supabase upsert, structured response + live verification
 
 ---
 
@@ -196,7 +199,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Project Scaffold & Database | 1/2 | In progress | - |
+| 1. Project Scaffold & Database | 2/2 | Complete ✓ | 2026-04-22 |
 | 2. Banner API Integration | 0/? | Not started | - |
 | 3. Alert System & Cron Worker | 0/? | Not started | - |
 | 4. Frontend Pages | 0/? | Not started | - |

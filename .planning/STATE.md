@@ -10,17 +10,16 @@ See: .planning/PROJECT.md (updated 2026-04-22)
 ## Current Status
 
 - Milestone: v1.0 MVP
-- Phase: 1 — Plan 1 complete
-- Current Plan: 2 of 2 (Phase 1)
-- Last action: Phase 1 Plan 1 executed — Next.js 15 scaffold complete (2026-04-23)
-- Resume file: .planning/phases/01-project-scaffold-database/01-2-supabase-schema-clients.md
+- Phase: 1 — COMPLETE
+- Next Phase: 2 — Banner API Integration
+- Last action: Phase 1 Plan 2 executed — Supabase schema + lib/ clients complete (2026-04-22)
 
 ## Progress
 
 | Phase | Plans Complete | Status |
 |-------|----------------|--------|
-| 1. Project Scaffold & Database | 1/2 | In progress |
-| 2. Banner API Integration | 0/? | Not started |
+| 1. Project Scaffold & Database | 2/2 | Complete ✓ |
+| 2. Banner API Integration | 0/2 | Ready to execute |
 | 3. Alert System & Cron Worker | 0/? | Not started |
 | 4. Frontend Pages | 0/? | Not started |
 | 5. Deployment Config & Documentation | 0/? | Not started |
@@ -38,6 +37,7 @@ See: .planning/PROJECT.md (updated 2026-04-22)
 | research/MARKET.md | ✓ Created |
 | research/SUMMARY.md | ✓ Created |
 | phases/01-project-scaffold-database/01-1-SUMMARY.md | ✓ Created |
+| phases/01-project-scaffold-database/01-2-SUMMARY.md | ✓ Created |
 
 ## Decisions Made
 
@@ -51,6 +51,7 @@ See: .planning/PROJECT.md (updated 2026-04-22)
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 1 | 1 | 373s | 4/4 | 17 |
+| 1 | 2 | — | 5/5 | 6 |
 
 ## Key Flags
 
