@@ -83,8 +83,8 @@ Plans:
 
 **Plans**: 2 plans
 Plans:
-- [ ] 02-01-PLAN.md — Implement lib/constants.ts + lib/banner.ts: session establishment, seat fetch, CRN filter, session expiry recovery
-- [ ] 02-02-PLAN.md — Create GET /api/course/[crn] route: Banner fetch, Supabase upsert, structured response + live verification
+- [x] 02-01-PLAN.md — Implement lib/constants.ts + lib/banner.ts: session establishment, seat fetch, CRN filter, session expiry recovery
+- [x] 02-02-PLAN.md — Create GET /api/course/[crn] route: Banner fetch, Supabase upsert, structured response + live verification
 
 ---
 
@@ -114,7 +114,11 @@ Plans:
   5. For a test alert where `seatsAvailable > 0`, the cron handler sends exactly one SMS and sets `sms_sent_at` in the database — a second cron invocation does not send a second SMS
   6. If Twilio returns error 21610 for a phone number, `sms_opted_out` is set to `true` in the database and subsequent cron runs skip that phone permanently
 
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 03-01-PLAN.md — Apply unique constraint migration + implement lib/twilio.ts (Twilio v5 singleton + sendSeatAlert)
+- [ ] 03-02-PLAN.md — Create POST /api/alerts: Zod validation, E.164 phone normalization, duplicate rejection (409), Supabase insert
+- [ ] 03-03-PLAN.md — Create GET /api/cron/check-seats: auth guard, Banner batching, SMS dispatch, opt-out handling + vercel.json
 
 ---
 
@@ -201,7 +205,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Project Scaffold & Database | 2/2 | Complete ✓ | 2026-04-22 |
 | 2. Banner API Integration | 2/2 | Complete ✓ | 2026-04-22 |
-| 3. Alert System & Cron Worker | 0/? | Not started | - |
+| 3. Alert System & Cron Worker | 0/3 | Planned | - |
 | 4. Frontend Pages | 0/? | Not started | - |
 | 5. Deployment Config & Documentation | 0/? | Not started | - |
 

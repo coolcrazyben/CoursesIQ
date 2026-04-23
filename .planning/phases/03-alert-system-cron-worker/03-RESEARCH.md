@@ -718,23 +718,16 @@ const { data } = await adminClient
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `POST /api/alerts` use `adminClient` (service-role) or `createClient()` (server.ts with publishable key)?**
-   - What we know: `anon_insert_alerts` RLS policy allows anonymous INSERT on the alerts table. The server client uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` which maps to the `anon` role. The `adminClient` uses service-role which bypasses RLS entirely.
-   - What's unclear: Either would work for INSERT. Using `adminClient` is simpler (no cookie handling needed in a POST route). Using server client is "more correct" per the RLS design intent.
-   - Recommendation: Use `adminClient` for the alert creation route. It avoids the cookie-handling overhead of `createClient()` and is already imported for the duplicate-check query. The anon INSERT policy exists to support browser-direct use (future); the API route always runs server-side anyway.
+   - RESOLVED: Use `adminClient` — avoids cookie-handling overhead; both work due to `anon_insert_alerts` RLS policy, but `adminClient` is simpler since the route has no user session context. Implemented in 03-02-PLAN.md.
 
 2. **Does the `alerts` table unique constraint on `(crn, phone_number)` conflict with any existing data?**
-   - What we know: The table was created in Phase 1 and has no constraint. Any test data inserted since then could have duplicates.
-   - What's unclear: Whether the Supabase project's alerts table currently has duplicate rows.
-   - Recommendation: The migration should include a `DELETE` deduplication step before adding the constraint, or the developer should manually verify via Supabase dashboard before running the migration.
+   - RESOLVED: Developer must check Supabase dashboard for duplicate rows before running migration (03-01 Task 2 includes verification SQL to check for duplicates and cleanup guidance in the threat model). Migration includes documentation of the deduplication step if needed.
 
 3. **SMS message exact text — emoji encoding in TypeScript source**
-   - REQUIREMENTS.md ALRT-08 shows: `"🎉 A seat just opened in [COURSE NAME] ([CRN])! Register now before it fills up: mybanner.msstate.edu — CoursesIQ"`
-   - ROADMAP.md Phase 3 deliverables shows: `"A seat just opened in [COURSE NAME] ([CRN])! Register now before it fills up: mybanner.msstate.edu — CoursesIQ"` (no emoji)
-   - The two differ. REQUIREMENTS.md (the formal requirement doc) includes the 🎉 emoji and is authoritative.
-   - Recommendation: Use the REQUIREMENTS.md version with the emoji. Encode as Unicode escape `\uD83C\uDF89` if the source file has encoding issues, or paste the emoji directly (UTF-8 source files).
+   - RESOLVED: Use REQUIREMENTS.md version with the 🎉 emoji (U+1F389) pasted directly as UTF-8 in the TypeScript source. REQUIREMENTS.md is the authoritative requirements document; ROADMAP omitted the emoji incidentally. Implemented in 03-01-PLAN.md Task 3.
 
 ---
 

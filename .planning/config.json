@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "project": "CoursesIQ",
+  "created": "2026-04-22",
+  "workflow": {
+    "yolo_mode": true,
+    "plan_granularity": "detailed",
+    "research_enabled": true,
+    "git_commits": true,
+    "parallel_agents": true
+  },
+  "model_profile": "balanced"
+}
