@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-04-22)
 
 **Core value:** Students get an SMS the moment a seat opens — before anyone else knows.
-**Current focus:** Phase 2 — executing Plan 2 (API route + seat endpoint)
+**Current focus:** Phase 3 — Alert System & Cron Worker
 
 ## Current Status
 
 - Milestone: v1.0 MVP
-- Phase: 2 — Banner API Integration
-- Current Plan: 2 of 2
-- Last action: Phase 2 Plan 1 executed — lib/constants.ts + lib/banner.ts Banner SSB client complete (2026-04-23)
+- Phase: 2 — COMPLETE
+- Next Phase: 3 — Alert System & Cron Worker
+- Last action: Phase 2 Plan 2 executed — GET /api/course/[crn] live verified against MSU Banner (2026-04-22)
 
 ## Progress
 
 | Phase | Plans Complete | Status |
 |-------|----------------|--------|
 | 1. Project Scaffold & Database | 2/2 | Complete ✓ |
-| 2. Banner API Integration | 1/2 | In progress |
+| 2. Banner API Integration | 2/2 | Complete ✓ |
 | 3. Alert System & Cron Worker | 0/? | Not started |
 | 4. Frontend Pages | 0/? | Not started |
 | 5. Deployment Config & Documentation | 0/? | Not started |
@@ -39,6 +39,7 @@ See: .planning/PROJECT.md (updated 2026-04-22)
 | phases/01-project-scaffold-database/01-1-SUMMARY.md | ✓ Created |
 | phases/01-project-scaffold-database/01-2-SUMMARY.md | ✓ Created |
 | phases/02-banner-api-integration/02-01-SUMMARY.md | ✓ Created |
+| phases/02-banner-api-integration/02-02-SUMMARY.md | ✓ Created |
 
 ## Decisions Made
 
@@ -55,6 +56,7 @@ See: .planning/PROJECT.md (updated 2026-04-22)
 | 1 | 1 | 373s | 4/4 | 17 |
 | 1 | 2 | — | 5/5 | 6 |
 | 2 | 1 | 81s | 2/2 | 2 |
+| 2 | 2 | — | 2/2 | 1 |
 
 ## Key Flags
 

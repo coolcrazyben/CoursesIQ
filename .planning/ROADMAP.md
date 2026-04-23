@@ -11,7 +11,7 @@
 ## Phases
 
 - [x] **Phase 1: Project Scaffold & Database** — Working Next.js 15 project with Supabase schema, RLS, and all lib/ modules stubbed
-- [ ] **Phase 2: Banner API Integration** — Working MSU Banner scraper that returns seat availability for any CRN
+- [x] **Phase 2: Banner API Integration** — Working MSU Banner scraper that returns seat availability for any CRN
 - [ ] **Phase 3: Alert System & Cron Worker** — Complete alert creation flow + working cron that checks seats and sends SMS
 - [ ] **Phase 4: Frontend Pages** — Three pages matching the design spec — mobile-first, maroon brand, functional forms
 - [ ] **Phase 5: Deployment Config & Documentation** — Production-ready deployment with cron, README, and all config files
@@ -200,7 +200,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Project Scaffold & Database | 2/2 | Complete ✓ | 2026-04-22 |
-| 2. Banner API Integration | 0/? | Not started | - |
+| 2. Banner API Integration | 2/2 | Complete ✓ | 2026-04-22 |
 | 3. Alert System & Cron Worker | 0/? | Not started | - |
 | 4. Frontend Pages | 0/? | Not started | - |
 | 5. Deployment Config & Documentation | 0/? | Not started | - |
