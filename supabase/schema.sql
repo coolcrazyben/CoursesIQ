@@ -10,16 +10,16 @@ create table if not exists public.alerts (
   subject          text        not null,
   course_number    text        not null,
   course_name      text,
-  phone_number     text        not null,
-  email            text,
+  email            text        not null,
+  phone_number     text,
   school           text        not null default 'MSU',
   term_code        text        not null,
   is_active        boolean     not null default true,
   created_at       timestamptz not null default now(),
-  sms_sent_at      timestamptz,
-  sms_opted_out    boolean     not null default false,
+  sent_at          timestamptz,
+  opted_out        boolean     not null default false,
   last_seats_avail integer,
-  sms_sid          text,
+  message_id       text,
   alert_reset_at   timestamptz
 );
 
@@ -39,7 +39,7 @@ alter table public.alerts  enable row level security;
 alter table public.courses enable row level security;
 
 -- alerts: anon role can INSERT new seat watch requests
--- No SELECT policy for anon — phone numbers are PII
+-- No SELECT policy for anon — email addresses are PII
 create policy "anon_insert_alerts"
   on public.alerts
   for insert
@@ -56,4 +56,4 @@ create policy "anon_select_courses"
 
 -- Note: service_role bypasses RLS automatically (BYPASSRLS privilege in Postgres)
 -- No explicit policy needed for service_role — admin.ts uses service_role for all
--- alert reads, seat updates, and sms_sent_at writes in the cron handler
+-- alert reads, seat updates, and sent_at writes in the cron handler
