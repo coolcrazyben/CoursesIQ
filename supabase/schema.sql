@@ -57,3 +57,8 @@ create policy "anon_select_courses"
 -- Note: service_role bypasses RLS automatically (BYPASSRLS privilege in Postgres)
 -- No explicit policy needed for service_role — admin.ts uses service_role for all
 -- alert reads, seat updates, and sent_at writes in the cron handler
+
+-- ===== CONSTRAINTS =====
+
+alter table public.alerts
+  add constraint alerts_crn_email_unique unique (crn, email);
