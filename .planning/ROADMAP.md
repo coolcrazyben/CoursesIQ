@@ -148,7 +148,13 @@ Plans:
   5. The dashboard phone lookup returns the correct alerts for a phone number that has active subscriptions, and clicking Cancel removes that alert from the list
   6. All pages use the dark maroon (`#5D1725`) primary color consistently — visible in the header background, primary buttons, and brand elements
 
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 04-01-PLAN.md — Update app/layout.tsx (maroon header + nav + metadata) + strip dark mode from globals.css + create app/about/page.tsx
+- [ ] 04-02-PLAN.md — Create PATCH /api/alerts/[id] cancel endpoint (adminClient, await params, 200/404/500)
+- [ ] 04-03-PLAN.md — Create components/AlertForm.tsx (client form, phone validation, TCPA text) + replace app/page.tsx (hero + live count + AlertForm)
+- [ ] 04-04-PLAN.md — Create components/DashboardAlerts.tsx (two-click cancel, optimistic removal) + create app/dashboard/page.tsx (searchParams phone lookup, E.164 normalization, Supabase query)
+
 **UI hint**: yes
 
 ---
@@ -206,7 +212,7 @@ Plans:
 | 1. Project Scaffold & Database | 2/2 | Complete ✓ | 2026-04-22 |
 | 2. Banner API Integration | 2/2 | Complete ✓ | 2026-04-22 |
 | 3. Alert System & Cron Worker | 1/3 | In Progress | - |
-| 4. Frontend Pages | 0/? | Not started | - |
+| 4. Frontend Pages | 0/4 | Not started | - |
 | 5. Deployment Config & Documentation | 0/? | Not started | - |
 
 ---
