@@ -12,8 +12,8 @@
 
 - [x] **Phase 1: Project Scaffold & Database** — Working Next.js 15 project with Supabase schema, RLS, and all lib/ modules stubbed
 - [x] **Phase 2: Banner API Integration** — Working MSU Banner scraper that returns seat availability for any CRN
-- [ ] **Phase 3: Alert System & Cron Worker** — Complete alert creation flow + working cron that checks seats and sends SMS
-- [ ] **Phase 4: Frontend Pages** — Three pages matching the design spec — mobile-first, maroon brand, functional forms
+- [x] **Phase 3: Alert System & Cron Worker** — Complete alert creation flow + working cron that checks seats and sends SMS
+- [x] **Phase 4: Frontend Pages** — Three pages matching the design spec — mobile-first, maroon brand, functional forms
 - [ ] **Phase 5: Deployment Config & Documentation** — Production-ready deployment with cron, README, and all config files
 
 ---
@@ -150,10 +150,10 @@ Plans:
 
 **Plans**: 4 plans
 Plans:
-- [ ] 04-01-PLAN.md — Update app/layout.tsx (maroon header + nav + metadata) + strip dark mode from globals.css + create app/about/page.tsx
-- [ ] 04-02-PLAN.md — Create PATCH /api/alerts/[id] cancel endpoint (adminClient, await params, 200/404/500)
-- [ ] 04-03-PLAN.md — Create components/AlertForm.tsx (client form, phone validation, TCPA text) + replace app/page.tsx (hero + live count + AlertForm)
-- [ ] 04-04-PLAN.md — Create components/DashboardAlerts.tsx (two-click cancel, optimistic removal) + create app/dashboard/page.tsx (searchParams phone lookup, E.164 normalization, Supabase query)
+- [x] 04-01-PLAN.md — Update app/layout.tsx (maroon header + nav + metadata) + strip dark mode from globals.css + create app/about/page.tsx
+- [x] 04-02-PLAN.md — Create PATCH /api/alerts/[id] cancel endpoint (adminClient, await params, 200/404/500)
+- [x] 04-03-PLAN.md — Create components/AlertForm.tsx (client form, phone validation, TCPA text) + replace app/page.tsx (hero + live count + AlertForm)
+- [x] 04-04-PLAN.md — Create components/DashboardAlerts.tsx (two-click cancel, optimistic removal) + create app/dashboard/page.tsx (searchParams phone lookup, E.164 normalization, Supabase query)
 
 **UI hint**: yes
 
@@ -211,8 +211,8 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Project Scaffold & Database | 2/2 | Complete ✓ | 2026-04-22 |
 | 2. Banner API Integration | 2/2 | Complete ✓ | 2026-04-22 |
-| 3. Alert System & Cron Worker | 1/3 | In Progress | - |
-| 4. Frontend Pages | 0/4 | Not started | - |
+| 3. Alert System & Cron Worker | 3/3 | Complete ✓ | 2026-04-26 |
+| 4. Frontend Pages | 4/4 | Complete ✓ | 2026-04-26 |
 | 5. Deployment Config & Documentation | 0/? | Not started | - |
 
 ---
