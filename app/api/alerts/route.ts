@@ -3,10 +3,12 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { adminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { CURRENT_TERM_CODE } from '@/lib/constants'
+import { getUserPlan, FREE_LIMITS } from '@/lib/subscription'
 
 const AlertSchema = z.object({
-  crn: z.string().min(1),
+  crn: z.string().optional(),
   subject: z.string().min(1),
   course_number: z.string().min(1),
   email: z.string().email(),
@@ -14,6 +16,23 @@ const AlertSchema = z.object({
   course_name: z.string().optional(),
   term_code: z.string().optional(),
 })
+
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
+  let body: unknown
+  try { body = await request.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+  const { id, waitlist_position, waitlist_total } = body as { id?: string; waitlist_position?: number | null; waitlist_total?: number | null }
+  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+
+  const { error } = await adminClient
+    .from('alerts')
+    .update({ waitlist_position: waitlist_position ?? null, waitlist_total: waitlist_total ?? null })
+    .eq('id', id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   // 1. Parse and validate request body
@@ -35,13 +54,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const { crn, subject, course_number, email, phone_number, course_name, term_code } =
     result.data
 
-  // 2. Check for duplicate alert — app-level defense
-  // DB unique constraint (alerts_crn_email_unique) is the race-condition-safe gate.
+  // 2. Free-tier limit: max 1 active alert per user
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const userId = user?.id ?? null
+
+  const plan = userId ? await getUserPlan(userId) : 'free'
+  if (plan === 'free') {
+    const { count } = await adminClient
+      .from('alerts')
+      .select('*', { count: 'exact', head: true })
+      .eq('email', email)
+      .eq('is_active', true)
+    if ((count ?? 0) >= FREE_LIMITS.alerts) {
+      return NextResponse.json({ error: 'UPGRADE_REQUIRED', limit: FREE_LIMITS.alerts }, { status: 402 })
+    }
+  }
+
+  // 3. Check for duplicate alert — deduplicate by subject+course_number+email
   const { data: existing, error: selectError } = await adminClient
     .from('alerts')
     .select('id')
-    .eq('crn', crn)
+    .eq('subject', subject)
+    .eq('course_number', course_number)
     .eq('email', email)
+    .eq('is_active', true)
     .maybeSingle()
 
   if (selectError) {
@@ -51,7 +88,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (existing) {
     return NextResponse.json(
-      { error: 'Alert already exists for this CRN and email' },
+      { error: 'Alert already exists for this course and email' },
       { status: 409 }
     )
   }
@@ -60,7 +97,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const { data, error } = await adminClient
     .from('alerts')
     .insert({
-      crn,
+      crn: crn ?? '',
       subject,
       course_number,
       course_name: course_name ?? null,

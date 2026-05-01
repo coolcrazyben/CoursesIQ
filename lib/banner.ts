@@ -17,6 +17,26 @@ const client = wrapper(
   })
 )
 
+export interface MeetingTime {
+  beginTime: string | null
+  endTime: string | null
+  monday: boolean
+  tuesday: boolean
+  wednesday: boolean
+  thursday: boolean
+  friday: boolean
+  saturday: boolean
+  sunday: boolean
+  building: string | null
+  buildingDescription: string | null
+  room: string | null
+  meetingTypeDescription: string | null
+}
+
+export interface MeetingsFaculty {
+  meetingTime: MeetingTime
+}
+
 export interface BannerSeatData {
   courseReferenceNumber: string
   courseNumber: string
@@ -33,6 +53,7 @@ export interface BannerSeatData {
     displayName: string
     primaryIndicator: boolean
   }>
+  meetingsFaculty?: MeetingsFaculty[]
 }
 
 /**
@@ -86,6 +107,55 @@ export async function getSeatsByCRN(
   await establishSession(termCode)
 
   return fetchWithRecovery(crn, subject, courseNumber, termCode, false)
+}
+
+/**
+ * Fetch all sections for a course (no CRN filter).
+ * Used by /api/sections to populate the section picker in the planner.
+ */
+export async function getSectionsByCourse(
+  subject: string,
+  courseNumber: string,
+  termCode: string = CURRENT_TERM_CODE
+): Promise<BannerSeatData[]> {
+  await establishSession(termCode)
+  return fetchAllSections(subject, courseNumber, termCode, false)
+}
+
+async function fetchAllSections(
+  subject: string,
+  courseNumber: string,
+  termCode: string,
+  isRetry: boolean
+): Promise<BannerSeatData[]> {
+  await resetDataForm()
+
+  const response = await client.get(
+    `${BANNER_BASE_URL}/searchResults/searchResults`,
+    {
+      params: {
+        txt_term: termCode,
+        txt_subject: subject,
+        txt_courseNumber: courseNumber,
+        pageOffset: 0,
+        pageMaxSize: 500,
+      },
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    }
+  )
+
+  const body = response.data as {
+    success: boolean
+    totalCount: number
+    data: BannerSeatData[] | null
+  }
+
+  if (body.totalCount === 0 && !isRetry) {
+    await establishSession(termCode)
+    return fetchAllSections(subject, courseNumber, termCode, true)
+  }
+
+  return body.data ?? []
 }
 
 async function fetchWithRecovery(
