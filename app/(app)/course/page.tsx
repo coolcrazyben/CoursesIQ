@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { adminClient } from '@/lib/supabase/admin'
 import CourseCard, { GradeRecord, RMPData } from '@/components/CourseCard'
 import CourseSearch from '@/components/CourseSearch'
@@ -92,7 +93,7 @@ export default async function CoursePage({ searchParams }: PageProps) {
         <h4 className="text-h3 text-primary-container mb-4">Course Search</h4>
         <CourseSearch />
         {hasSearch && (
-          <a href="/course" className="block w-full text-center py-2 mt-3 text-sm text-secondary hover:underline">Reset</a>
+          <Link href="/course" className="block w-full text-center py-2 mt-3 text-sm text-secondary hover:underline">Reset</Link>
         )}
 
         {/* Instructor list when course is selected */}
@@ -149,7 +150,7 @@ export default async function CoursePage({ searchParams }: PageProps) {
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {filteredCourses.map(c => (
-                  <a
+                  <Link
                     key={`${c.subject}|${c.course_number}`}
                     href={`/course?subject=${encodeURIComponent(c.subject)}&number=${encodeURIComponent(c.course_number)}`}
                     className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-container/40 hover:shadow-md transition-all group"
@@ -159,7 +160,7 @@ export default async function CoursePage({ searchParams }: PageProps) {
                     </div>
                     <p className="text-xs text-secondary font-semibold mb-0.5">{c.subject}</p>
                     <p className="font-bold text-on-surface">{c.course_number}</p>
-                  </a>
+                  </Link>
                 ))}
               </div>
             )}
@@ -179,13 +180,13 @@ export default async function CoursePage({ searchParams }: PageProps) {
                 </div>
                 <h2 className="text-h1 text-on-surface">Grade Distribution</h2>
               </div>
-              <a
+              <Link
                 href={`/?subject=${subject}&number=${number}#alert-form`}
                 className="bg-primary-container text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add_alert</span>
                 Set Up Alert
-              </a>
+              </Link>
             </div>
 
             {/* Stats row */}

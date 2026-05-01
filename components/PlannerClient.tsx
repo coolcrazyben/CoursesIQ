@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { Schedule, ScheduleCourse } from '@/app/(app)/planner/page'
 import type { MeetingTime } from '@/lib/banner'
@@ -385,12 +386,12 @@ export default function PlannerClient({ initialSchedules, initialCourses, userId
                   return (
                     <div key={c.id} className="flex items-center gap-2 bg-white border border-gray-100 rounded-lg px-3 py-1.5 shadow-sm">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                      <a
+                      <Link
                         href={`/course?subject=${encodeURIComponent(c.subject)}&number=${encodeURIComponent(c.course_number)}`}
                         className="text-xs font-semibold text-on-surface hover:text-primary-container hover:underline transition-colors"
                       >
                         {c.subject} {c.course_number}
-                      </a>
+                      </Link>
                       {c.professor && <span className="text-xs text-secondary hidden sm:inline">{c.professor}</span>}
                       {c.professor && <CourseSummaryPanel subject={c.subject} course_number={c.course_number} professor={c.professor} />}
                       <button onClick={() => removeCourse(c.id)} className="text-gray-300 hover:text-red-400 transition-colors ml-1">
@@ -432,12 +433,12 @@ export default function PlannerClient({ initialSchedules, initialCourses, userId
                 </li>
               ))}
             </ul>
-            <a
+            <Link
               href="/upgrade"
               className="block w-full bg-primary-container text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity mb-2"
             >
               See plans — from $5/mo
-            </a>
+            </Link>
             <button
               onClick={() => setPaywallOpen(false)}
               className="block w-full text-sm text-secondary hover:text-on-surface transition-colors py-1"
@@ -617,12 +618,12 @@ function RightPanel({
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <a
+                        <Link
                           href={`/course?subject=${encodeURIComponent(c.subject)}&number=${encodeURIComponent(c.course_number)}`}
                           className={`text-[10px] font-bold px-1.5 py-0.5 rounded hover:underline ${hasConflict ? 'bg-red-100 text-red-700' : 'bg-primary-fixed text-primary-container'}`}
                         >
                           {c.subject} {c.course_number}
-                        </a>
+                        </Link>
                         {hasConflict && (
                           <span className="text-[10px] font-bold text-red-600 flex items-center gap-0.5">
                             <span className="material-symbols-outlined" style={{ fontSize: 11 }}>warning</span>
@@ -639,12 +640,12 @@ function RightPanel({
                   </div>
 
                   {hasConflict ? (
-                    <a
+                    <Link
                       href={`/course?subject=${encodeURIComponent(c.subject)}&number=${encodeURIComponent(c.course_number)}`}
                       className="block w-full text-center text-xs font-semibold py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-100 transition-colors"
                     >
                       Find Alternatives
-                    </a>
+                    </Link>
                   ) : (
                     <button
                       onClick={() => onPromote(c.id)}
@@ -734,12 +735,12 @@ function ComparePanel({
       <div className="mt-3 space-y-1.5">
         {courses.filter(c => !c.is_pending).map(c => (
           <div key={c.id} className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-gray-100">
-            <a
+            <Link
               href={`/course?subject=${encodeURIComponent(c.subject)}&number=${encodeURIComponent(c.course_number)}`}
               className="text-xs font-semibold text-on-surface hover:text-primary-container hover:underline transition-colors"
             >
               {c.subject} {c.course_number}
-            </a>
+            </Link>
             <button onClick={() => onRemove(c.id)} className="text-gray-300 hover:text-red-400">
               <span className="material-symbols-outlined" style={{ fontSize: 13 }}>close</span>
             </button>
