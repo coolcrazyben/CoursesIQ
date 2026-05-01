@@ -22,12 +22,14 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
 
   // Protect /planner and /dashboard
   const pathname = req.nextUrl.pathname
-  if ((pathname.startsWith('/planner') || pathname.startsWith('/dashboard')) && !session) {
-    return NextResponse.redirect(new URL('/auth/login', req.url))
+  if ((pathname.startsWith('/planner') || pathname.startsWith('/dashboard')) && !user) {
+    const loginUrl = new URL('/auth/login', req.url)
+    loginUrl.searchParams.set('next', pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
   return res
