@@ -43,8 +43,9 @@ export default function LoginPage() {
       const { error: err } = await supabase.auth.signInWithPassword({ email, password })
       setLoading(false)
       if (err) {
-        setError(err.message)
+        setError(err.message || 'Sign in failed. Please try again.')
       } else {
+        router.refresh()
         router.push(nextPath)
       }
     } else {
