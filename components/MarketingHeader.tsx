@@ -18,9 +18,10 @@ export default function MarketingHeader() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link href="/course" className="text-sm text-gray-600 hover:text-[#601020] font-medium transition-colors">Courses</Link>
+          <a href="#features" className="text-sm text-gray-600 hover:text-[#601020] font-medium transition-colors">Features</a>
+          <a href="#how-it-works" className="text-sm text-gray-600 hover:text-[#601020] font-medium transition-colors">How It Works</a>
           <a href="#pricing" className="text-sm text-gray-600 hover:text-[#601020] font-medium transition-colors">Pricing</a>
-          <Link href="/dashboard" className="text-sm text-gray-600 hover:text-[#601020] font-medium transition-colors">Dashboard</Link>
+          <Link href="/course" className="text-sm text-gray-600 hover:text-[#601020] font-medium transition-colors">Browse Courses</Link>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -44,9 +45,10 @@ export default function MarketingHeader() {
       {/* Mobile dropdown */}
       {menuOpen && (
         <nav className="md:hidden border-t border-gray-100 bg-white px-6 py-3 flex flex-col">
-          <Link href="/course" onClick={() => setMenuOpen(false)} className="py-3 text-sm font-medium text-gray-700 border-b border-gray-100">Courses</Link>
+          <a href="#features" onClick={() => setMenuOpen(false)} className="py-3 text-sm font-medium text-gray-700 border-b border-gray-100">Features</a>
+          <a href="#how-it-works" onClick={() => setMenuOpen(false)} className="py-3 text-sm font-medium text-gray-700 border-b border-gray-100">How It Works</a>
           <a href="#pricing" onClick={() => setMenuOpen(false)} className="py-3 text-sm font-medium text-gray-700 border-b border-gray-100">Pricing</a>
-          <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="py-3 text-sm font-medium text-gray-700">Dashboard</Link>
+          <Link href="/course" onClick={() => setMenuOpen(false)} className="py-3 text-sm font-medium text-gray-700">Browse Courses</Link>
         </nav>
       )}
     </header>
