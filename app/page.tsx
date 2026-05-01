@@ -660,12 +660,20 @@ export default async function LandingPage({ searchParams }: PageProps) {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/auth/login"
-                  className="block w-full text-center bg-white text-primary-container py-3 rounded-xl font-bold hover:opacity-90 transition-opacity text-sm"
-                >
-                  Start for $5 / month
-                </Link>
+                <div className="space-y-2">
+                  <Link
+                    href="/auth/login"
+                    className="block w-full text-center bg-white text-primary-container py-3 rounded-xl font-bold hover:opacity-90 transition-opacity text-sm"
+                  >
+                    Start for $5 / month
+                  </Link>
+                  <Link
+                    href="/auth/login"
+                    className="block w-full text-center bg-white/10 border border-white/20 text-white py-3 rounded-xl font-bold hover:bg-white/20 transition-all text-sm"
+                  >
+                    Get $30 / year — save $30
+                  </Link>
+                </div>
               </div>
             </div>
 
