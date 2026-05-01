@@ -16,7 +16,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  const obj = event.data.object as Stripe.Subscription
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const obj = event.data.object as Stripe.Subscription & { current_period_end: number }
 
   switch (event.type) {
     case 'customer.subscription.created':
