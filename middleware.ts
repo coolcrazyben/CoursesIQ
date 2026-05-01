@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
+  // Must be created with { request } so refreshed cookies propagate to page handlers
+  let res = NextResponse.next({ request: req })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,10 +14,13 @@ export async function middleware(req: NextRequest) {
           return req.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            req.cookies.set(name, value)
+          // Apply to request first so downstream handlers see updated cookies
+          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value))
+          // Recreate response with updated request so page handlers inherit the cookies
+          res = NextResponse.next({ request: req })
+          cookiesToSet.forEach(({ name, value, options }) =>
             res.cookies.set(name, value, options)
-          })
+          )
         },
       },
     }

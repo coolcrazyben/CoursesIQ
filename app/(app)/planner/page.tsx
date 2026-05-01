@@ -29,10 +29,10 @@ export interface ScheduleCourse {
 
 export default async function PlannerPage() {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!session) {
-    redirect('/auth/login')
+  if (!user) {
+    redirect('/auth/login?next=/planner')
   }
 
   const { data: schedules } = await supabase
@@ -51,13 +51,13 @@ export default async function PlannerPage() {
     courses = data ?? []
   }
 
-  const plan = await getUserPlan(session.user.id)
+  const plan = await getUserPlan(user!.id)
 
   return (
     <PlannerClient
       initialSchedules={schedules ?? []}
       initialCourses={courses}
-      userId={session.user.id}
+      userId={user!.id}
       plan={plan}
     />
   )

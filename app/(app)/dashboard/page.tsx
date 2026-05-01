@@ -35,11 +35,11 @@ function calcProbability(pos: number | null, total: number | null): { label: 'LI
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect('/auth/login')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login?next=/dashboard')
 
-  const email = session.user.email!
-  const plan  = await getUserPlan(session.user.id)
+  const email = user.email!
+  const plan  = await getUserPlan(user.id)
 
   const { data } = await adminClient
     .from('alerts')
