@@ -1,8 +1,8 @@
-import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import CourseSearch from '@/components/CourseSearch'
 import { createClient } from '@/lib/supabase/server'
 import { getUserPlan } from '@/lib/subscription'
+import { signOut } from '@/app/actions/auth'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -26,12 +26,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
             <div className="text-right">
               <p className="text-sm font-bold text-primary-container truncate max-w-[180px]">{email || 'MSU Student'}</p>
-              <Link
-                href="/auth/logout"
-                className="text-[10px] text-gray-500 uppercase hover:text-primary-container transition-colors"
-              >
-                Sign out
-              </Link>
+              <form action={signOut}>
+                <button type="submit" className="text-[10px] text-gray-500 uppercase hover:text-primary-container transition-colors bg-transparent border-none cursor-pointer p-0">
+                  Sign out
+                </button>
+              </form>
             </div>
             <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-xs font-bold select-none">
               {initials}
