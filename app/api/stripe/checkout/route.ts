@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
   }
 
   const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const userId = user.id
 
   async function createSession(cid: string) {
     return stripe.checkout.sessions.create({
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${base}/dashboard?upgraded=true`,
       cancel_url:  `${base}/upgrade`,
-      subscription_data: { metadata: { user_id: user.id } },
+      subscription_data: { metadata: { user_id: userId } },
     })
   }
 
