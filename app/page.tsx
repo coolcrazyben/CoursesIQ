@@ -1,4 +1,4 @@
-import { adminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import AlertForm from '@/components/AlertForm'
 import Link from 'next/link'
 import MarketingHeader from '@/components/MarketingHeader'
@@ -12,14 +12,16 @@ interface PageProps {
 export default async function LandingPage({ searchParams }: PageProps) {
   const { subject: urlSubject, number: urlNumber } = await searchParams
 
-  const { count } = await adminClient
+  const supabase = await createClient()
+
+  const { count } = await supabase
     .from('alerts').select('*', { count: 'exact', head: true }).eq('is_active', true)
   const activeCount = count ?? 0
 
-  const { data: gradeRows } = await adminClient
+  const { data: gradeRows } = await supabase
     .from('grade_distributions')
     .select('a_count, b_count, c_count, d_count, f_count, total_students')
-  const { count: recordCount } = await adminClient
+  const { count: recordCount } = await supabase
     .from('grade_distributions').select('*', { count: 'exact', head: true })
 
   const totals = { a: 0, b: 0, c: 0, d: 0, f: 0 }
