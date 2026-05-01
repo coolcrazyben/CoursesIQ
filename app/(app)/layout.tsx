@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import Sidebar from '@/components/Sidebar'
 import CourseSearch from '@/components/CourseSearch'
 import { createClient } from '@/lib/supabase/server'

@@ -1,13 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 type Mode = 'signin' | 'signup'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [nextPath, setNextPath] = useState('/planner')
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
@@ -45,8 +43,7 @@ export default function LoginPage() {
       if (err) {
         setError(err.message || 'Sign in failed. Please try again.')
       } else {
-        router.refresh()
-        router.push(nextPath)
+        window.location.replace(nextPath)
       }
     } else {
       const { error: err } = await supabase.auth.signUp({
