@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error'
 
@@ -88,6 +89,14 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!selected) { setErrorMessage('Please select a course from the list first.'); return }
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      window.location.href = '/auth/login'
+      return
+    }
+
     setErrorMessage('')
     setStatus('submitting')
 

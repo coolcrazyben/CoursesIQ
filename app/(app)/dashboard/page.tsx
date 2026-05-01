@@ -55,7 +55,7 @@ export default async function DashboardPage() {
   const unlikelyCount = probs.filter(p => p.label === 'UNLIKELY').length
 
   return (
-    <div className="max-w-5xl mx-auto px-8 py-12">
+    <div className="max-w-5xl mx-auto px-4 md:px-8 py-8 md:py-12">
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div>

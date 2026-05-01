@@ -1,6 +1,7 @@
 import { adminClient } from '@/lib/supabase/admin'
 import AlertForm from '@/components/AlertForm'
 import Link from 'next/link'
+import MarketingHeader from '@/components/MarketingHeader'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,28 +48,7 @@ export default async function LandingPage({ searchParams }: PageProps) {
 
   return (
     <>
-      {/* ── Marketing Nav ── */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
-            <div className="w-8 h-8 bg-[#601020] rounded-lg flex items-center justify-center">
-              <span className="material-symbols-outlined text-white" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>school</span>
-            </div>
-            <span className="font-black text-lg text-gray-900 tracking-tight">CoursesIQ</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/course" className="text-sm text-gray-600 hover:text-[#601020] font-medium transition-colors">Courses</Link>
-            <a href="#pricing" className="text-sm text-gray-600 hover:text-[#601020] font-medium transition-colors">Pricing</a>
-            <Link href="/dashboard" className="text-sm text-gray-600 hover:text-[#601020] font-medium transition-colors">Dashboard</Link>
-          </nav>
-          <Link
-            href="/dashboard"
-            className="bg-[#601020] text-white px-5 py-2 rounded-full text-sm font-bold hover:opacity-90 transition-opacity"
-          >
-            Get Started
-          </Link>
-        </div>
-      </header>
+      <MarketingHeader />
 
       <main>
         {/* ── Hero ── */}
@@ -80,7 +60,7 @@ export default async function LandingPage({ searchParams }: PageProps) {
                 'radial-gradient(ellipse at 10% 60%, #ffdadb50 0%, transparent 55%), radial-gradient(ellipse at 90% 10%, #ffdadb30 0%, transparent 55%)',
             }}
           />
-          <div className="max-w-7xl mx-auto px-8 grid lg:grid-cols-2 gap-16 items-center relative z-10">
+          <div className="max-w-7xl mx-auto px-6 md:px-8 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center relative z-10">
             {/* Left copy */}
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-fixed text-on-primary-fixed text-label-sm mb-6 font-semibold">
@@ -150,14 +130,14 @@ export default async function LandingPage({ searchParams }: PageProps) {
         </section>
 
         {/* ── Features Bento ── */}
-        <section className="py-24 bg-background">
-          <div className="max-w-7xl mx-auto px-8">
-            <div className="text-center mb-16">
+        <section className="py-16 md:py-24 bg-background">
+          <div className="max-w-7xl mx-auto px-6 md:px-8">
+            <div className="text-center mb-10 md:mb-16">
               <h2 className="text-h1 text-primary mb-4">Built for Student Success</h2>
               <p className="text-body-lg text-secondary">The tools you need to get the classes you want.</p>
             </div>
 
-            <div className="grid md:grid-cols-12 gap-6">
+            <div className="grid md:grid-cols-12 gap-4 md:gap-6">
               {/* Grade data card — real chart */}
               <a
                 href="/course"
@@ -234,8 +214,8 @@ export default async function LandingPage({ searchParams }: PageProps) {
         </section>
 
         {/* ── Stats ── */}
-        <section className="py-20 bg-white border-y border-gray-100">
-          <div className="max-w-7xl mx-auto px-8 grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
+        <section className="py-12 md:py-20 bg-white border-y border-gray-100">
+          <div className="max-w-7xl mx-auto px-6 md:px-8 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-12 text-center">
             {[
               { v: activeCount > 0 ? `${activeCount.toLocaleString()}+` : '100+', l: 'Students Watching' },
               { v: displayRecords + '+', l: 'Grade Records' },
@@ -251,8 +231,8 @@ export default async function LandingPage({ searchParams }: PageProps) {
         </section>
 
         {/* ── Pricing ── */}
-        <section id="pricing" className="py-24 bg-white border-t border-gray-100">
-          <div className="max-w-4xl mx-auto px-8">
+        <section id="pricing" className="py-16 md:py-24 bg-white border-t border-gray-100">
+          <div className="max-w-4xl mx-auto px-6 md:px-8">
             <div className="text-center mb-14">
               <h2 className="text-h1 text-primary mb-3">Simple, transparent pricing</h2>
               <p className="text-body-lg text-secondary">Start free. Upgrade when you need more.</p>

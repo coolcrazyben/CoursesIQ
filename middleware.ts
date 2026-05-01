@@ -28,9 +28,12 @@ export async function middleware(req: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protect /planner and /dashboard
+  // Protect /planner, /dashboard, and /course
   const pathname = req.nextUrl.pathname
-  if ((pathname.startsWith('/planner') || pathname.startsWith('/dashboard')) && !user) {
+  if (
+    (pathname.startsWith('/planner') || pathname.startsWith('/dashboard') || pathname.startsWith('/course')) &&
+    !user
+  ) {
     const loginUrl = new URL('/auth/login', req.url)
     loginUrl.searchParams.set('next', pathname)
     return NextResponse.redirect(loginUrl)
@@ -40,5 +43,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/planner/:path*', '/dashboard/:path*'],
+  matcher: ['/planner/:path*', '/dashboard/:path*', '/course/:path*'],
 }

@@ -87,9 +87,9 @@ export default async function CoursePage({ searchParams }: PageProps) {
   const label = subject && number ? `${subject.toUpperCase()} ${number}` : ''
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div className="flex flex-col md:flex-row md:h-[calc(100vh-64px)]">
       {/* Left panel */}
-      <aside className="w-72 border-r border-outline-variant bg-white p-6 overflow-y-auto shrink-0">
+      <aside className="w-full md:w-72 border-b md:border-b-0 md:border-r border-outline-variant bg-white p-6 overflow-y-auto md:shrink-0">
         <h4 className="text-h3 text-primary-container mb-4">Course Search</h4>
         <CourseSearch />
         {hasSearch && (
@@ -122,7 +122,7 @@ export default async function CoursePage({ searchParams }: PageProps) {
       </aside>
 
       {/* Main results */}
-      <section className="flex-1 overflow-y-auto bg-surface-container-low">
+      <section className="flex-1 md:overflow-y-auto bg-surface-container-low">
         {!hasSearch && !hasFilter ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <div className="w-16 h-16 bg-primary-fixed rounded-2xl flex items-center justify-center text-primary-container mb-4">

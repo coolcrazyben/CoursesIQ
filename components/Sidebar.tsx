@@ -9,13 +9,28 @@ const nav = [
   { href: '/planner',   icon: 'calendar_today',   label: 'Schedule Builder'            },
 ]
 
-export default function Sidebar({ plan }: { plan: 'free' | 'pro' }) {
+interface SidebarProps {
+  plan: 'free' | 'pro'
+  open?: boolean
+  onClose?: () => void
+}
+
+export default function Sidebar({ plan, open = false, onClose }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-[280px] z-50 bg-[#601020] text-white flex flex-col py-6 border-r border-white/10 shadow-xl">
-      {/* Logo — links to home */}
-      <Link href="/" className="px-6 mb-8 flex items-center gap-3 hover:opacity-90 transition-opacity">
+    <aside className={`fixed left-0 top-0 h-full w-[280px] z-50 bg-[#601020] text-white flex flex-col py-6 border-r border-white/10 shadow-xl transition-transform duration-200 md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}>
+      {/* Close button — mobile only */}
+      <button
+        className="md:hidden absolute top-4 right-4 p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+        onClick={onClose}
+        aria-label="Close menu"
+      >
+        <span className="material-symbols-outlined">close</span>
+      </button>
+
+      {/* Logo */}
+      <Link href="/" className="px-6 mb-8 flex items-center gap-3 hover:opacity-90 transition-opacity" onClick={onClose}>
         <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
           <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>school</span>
         </div>
@@ -33,6 +48,7 @@ export default function Sidebar({ plan }: { plan: 'free' | 'pro' }) {
             <Link
               key={href + label}
               href={href}
+              onClick={onClose}
               className={active
                 ? 'flex items-center gap-3 bg-white text-[#601020] rounded-full px-4 py-3 mx-2 font-semibold shadow-sm'
                 : 'flex items-center gap-3 text-white/70 hover:text-white px-4 py-3 mx-2 transition-colors hover:bg-white/10 rounded-lg'
@@ -60,12 +76,12 @@ export default function Sidebar({ plan }: { plan: 'free' | 'pro' }) {
             <span>Manage Subscription</span>
           </button>
         ) : (
-          <Link href="/upgrade" className="flex items-center gap-3 text-yellow-300 hover:text-white px-4 py-2 transition-colors hover:bg-white/10 rounded-lg text-sm font-semibold">
+          <Link href="/upgrade" onClick={onClose} className="flex items-center gap-3 text-yellow-300 hover:text-white px-4 py-2 transition-colors hover:bg-white/10 rounded-lg text-sm font-semibold">
             <span className="material-symbols-outlined" style={{ fontSize: 18, fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
             <span>Upgrade to Pro</span>
           </Link>
         )}
-        <Link href="/about" className="flex items-center gap-3 text-white/50 hover:text-white px-4 py-2 transition-colors hover:bg-white/10 rounded-lg text-sm">
+        <Link href="/about" onClick={onClose} className="flex items-center gap-3 text-white/50 hover:text-white px-4 py-2 transition-colors hover:bg-white/10 rounded-lg text-sm">
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>info</span>
           <span>About</span>
         </Link>
