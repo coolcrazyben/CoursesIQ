@@ -93,10 +93,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  // 3. Insert new alert row
+  // 4. Insert new alert row, or reactivate a previously cancelled one.
+  // crn is '' when not provided, so the unique constraint (crn, email) means only one
+  // row ever exists per email. Use upsert to handle the re-tracking case without a 409.
   const { data, error } = await adminClient
     .from('alerts')
-    .insert({
+    .upsert({
       crn: crn ?? '',
       subject,
       course_number,
@@ -105,15 +107,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       phone_number: phone_number ?? null,
       school: 'MSU',
       term_code: term_code ?? CURRENT_TERM_CODE,
-    })
+      is_active: true,
+    }, { onConflict: 'crn,email' })
     .select('id')
     .single()
 
   if (error) {
-    // 23505 = unique_violation — race condition duplicate (two concurrent identical POSTs)
-    if (error.code === '23505') {
-      return NextResponse.json({ error: 'Duplicate alert' }, { status: 409 })
-    }
     console.error('[api/alerts] Supabase insert error:', error.message)
     return NextResponse.json({ error: 'Failed to create alert' }, { status: 500 })
   }
