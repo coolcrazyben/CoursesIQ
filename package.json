@@ -9,12 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.51.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.104.0",
     "axios": "^1.15.2",
     "axios-cookiejar-support": "^6.0.5",
     "libphonenumber-js": "^1.12.42",
     "next": "15.5.15",
+    "posthog-js": "^1.372.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "resend": "^6.1.3",

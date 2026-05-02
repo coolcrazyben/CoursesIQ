@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { PostHogProvider } from "./providers";
+import { PostHogPageView } from "./PostHogPageView";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "CoursesIQ",
   description: "Get an email the moment a seat opens in your MSU course — before anyone else knows.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
@@ -20,7 +26,12 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        {children}
+        <PostHogProvider>
+          <Suspense fallback={null}>
+            <PostHogPageView />
+          </Suspense>
+          {children}
+        </PostHogProvider>
       </body>
     </html>
   );
