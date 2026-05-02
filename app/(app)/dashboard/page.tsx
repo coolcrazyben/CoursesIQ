@@ -5,6 +5,7 @@ import { adminClient } from '@/lib/supabase/admin'
 import DashboardAlerts from '@/components/DashboardAlerts'
 import AddAlertModal from '@/components/AddAlertModal'
 import { getUserPlan } from '@/lib/subscription'
+import { stripe } from '@/lib/stripe'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Waitlist Tracker — CoursesIQ' }
@@ -33,10 +34,73 @@ function calcProbability(pos: number | null, total: number | null): { label: 'LI
   return { label: 'UNLIKELY', pct: 18 }
 }
 
-export default async function DashboardPage() {
+function toPeriodEndISO(val: unknown): string | null {
+  if (typeof val === 'number') return new Date(val * 1000).toISOString()
+  if (typeof val === 'string' && val) {
+    const d = new Date(val)
+    return isNaN(d.getTime()) ? null : d.toISOString()
+  }
+  return null
+}
+
+async function syncSubscriptionFromStripe(userId: string) {
+  try {
+    const { data: sub } = await adminClient
+      .from('user_subscriptions')
+      .select('stripe_customer_id')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    let customerId = sub?.stripe_customer_id
+
+    if (!customerId) {
+      const results = await stripe.customers.search({
+        query: `metadata['supabase_user_id']:'${userId}'`,
+        limit: 1,
+      })
+      customerId = results.data[0]?.id
+    }
+
+    if (!customerId) return
+
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: 'active',
+      limit: 1,
+    })
+
+    const activeSub = subscriptions.data[0]
+    if (activeSub) {
+      const rawPeriodEnd = (activeSub as unknown as Record<string, unknown>).current_period_end
+      await adminClient.from('user_subscriptions').upsert({
+        user_id:               userId,
+        stripe_customer_id:    customerId,
+        stripe_subscription_id: activeSub.id,
+        plan:                  'pro',
+        billing_interval:      activeSub.items.data[0]?.price.recurring?.interval ?? null,
+        current_period_end:    toPeriodEndISO(rawPeriodEnd),
+        cancel_at_period_end:  activeSub.cancel_at_period_end,
+        updated_at:            new Date().toISOString(),
+      })
+    }
+  } catch {
+    // Non-fatal — webhook will catch it if Stripe call fails
+  }
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ upgraded?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?next=/dashboard')
+
+  const params = await searchParams
+  if (params.upgraded === 'true') {
+    await syncSubscriptionFromStripe(user.id)
+  }
 
   const email = user.email!
   const plan  = await getUserPlan(user.id)

@@ -5,6 +5,15 @@ import { stripe } from '@/lib/stripe'
 import { adminClient } from '@/lib/supabase/admin'
 import type Stripe from 'stripe'
 
+function toPeriodEndISO(val: unknown): string | null {
+  if (typeof val === 'number') return new Date(val * 1000).toISOString()
+  if (typeof val === 'string' && val) {
+    const d = new Date(val)
+    return isNaN(d.getTime()) ? null : d.toISOString()
+  }
+  return null
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.text()
   const sig  = req.headers.get('stripe-signature') ?? ''
@@ -29,7 +38,7 @@ export async function POST(req: NextRequest) {
         stripe_subscription_id: obj.id,
         plan:                  obj.status === 'active' ? 'pro' : 'free',
         billing_interval:      obj.items.data[0]?.price.recurring?.interval ?? null,
-        current_period_end:    new Date(obj.current_period_end * 1000).toISOString(),
+        current_period_end:    toPeriodEndISO((obj as unknown as Record<string, unknown>).current_period_end),
         cancel_at_period_end:  obj.cancel_at_period_end,
         updated_at:            new Date().toISOString(),
       })
