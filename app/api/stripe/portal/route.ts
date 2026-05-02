@@ -17,15 +17,19 @@ export async function POST() {
     .maybeSingle()
 
   if (!sub?.stripe_customer_id) {
-    const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    return NextResponse.redirect(new URL('/upgrade', base))
+    return NextResponse.json({ redirect: '/upgrade' })
   }
 
   const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-  const portal = await stripe.billingPortal.sessions.create({
-    customer:   sub.stripe_customer_id,
-    return_url: `${base}/dashboard`,
-  })
 
-  return NextResponse.json({ url: portal.url })
+  try {
+    const portal = await stripe.billingPortal.sessions.create({
+      customer:   sub.stripe_customer_id,
+      return_url: `${base}/dashboard`,
+    })
+    return NextResponse.json({ url: portal.url })
+  } catch (err) {
+    console.error('Stripe portal error:', err)
+    return NextResponse.json({ error: 'Failed to create billing portal session' }, { status: 500 })
+  }
 }

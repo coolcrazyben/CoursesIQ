@@ -67,8 +67,10 @@ export default function Sidebar({ plan, open = false, onClose }: SidebarProps) {
           <button
             onClick={async () => {
               const res = await fetch('/api/stripe/portal', { method: 'POST' })
-              const { url } = await res.json()
-              if (url) window.location.href = url
+              if (!res.ok) return
+              const data = await res.json()
+              if (data.redirect) window.location.href = data.redirect
+              else if (data.url) window.location.href = data.url
             }}
             className="w-full flex items-center gap-3 text-green-300 hover:text-white px-4 py-2 transition-colors hover:bg-white/10 rounded-lg text-sm font-semibold"
           >
