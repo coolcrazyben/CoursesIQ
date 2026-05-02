@@ -5,6 +5,23 @@ const nextConfig: NextConfig = {
   // Twilio uses Node.js native modules not in Next.js built-in externals list.
   // Must be explicit here AND routes must export `const runtime = 'nodejs'`.
   serverExternalPackages: ['twilio'],
+  async rewrites() {
+    return [
+      {
+        source: '/ingest/static/:path*',
+        destination: 'https://us-assets.i.posthog.com/static/:path*',
+      },
+      {
+        source: '/ingest/array/:path*',
+        destination: 'https://us-assets.i.posthog.com/array/:path*',
+      },
+      {
+        source: '/ingest/:path*',
+        destination: 'https://us.i.posthog.com/:path*',
+      },
+    ]
+  },
+  skipTrailingSlashRedirect: true,
 }
 
 export default withSentryConfig(nextConfig, {
