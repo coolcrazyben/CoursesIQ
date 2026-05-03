@@ -2,9 +2,11 @@ import { Metadata } from 'next'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { adminClient } from '@/lib/supabase/admin'
+import { getSectionsByCourse, BannerSeatData, MeetingTime } from '@/lib/banner'
 import CourseCard, { GradeRecord, RMPData } from '@/components/CourseCard'
 import CourseSearch from '@/components/CourseSearch'
 import CourseFilter from '@/components/CourseFilter'
+import { CURRENT_TERM_CODE } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Course Search — CoursesIQ' }
@@ -39,6 +41,34 @@ function groupByProfessor(records: GradeRecord[]): Map<string, GradeRecord[]> {
   return map
 }
 
+async function fetchSections(subject: string, number: string): Promise<BannerSeatData[]> {
+  try {
+    return await getSectionsByCourse(subject, number)
+  } catch { return [] }
+}
+
+function formatTime(t: string): string {
+  const h = parseInt(t.slice(0, 2), 10)
+  const m = t.slice(2)
+  return `${h % 12 || 12}:${m} ${h >= 12 ? 'PM' : 'AM'}`
+}
+
+function buildMeetingDays(mt: MeetingTime): string {
+  const days: [keyof MeetingTime, string][] = [
+    ['monday', 'M'], ['tuesday', 'T'], ['wednesday', 'W'], ['thursday', 'R'], ['friday', 'F'],
+  ]
+  return days.filter(([k]) => mt[k] as boolean).map(([, v]) => v).join('') || 'TBA'
+}
+
+function termLabel(code: string): string {
+  const tt = code.slice(4)
+  const year = code.slice(0, 4)
+  if (tt === '10') return `Spring ${year}`
+  if (tt === '20') return `Summer ${year}`
+  if (tt === '30') return `Fall ${year}`
+  return code
+}
+
 export default async function CoursePage({ searchParams }: PageProps) {
   const { subject, number, dept, level, available } = await searchParams
   const hasSearch = Boolean(subject && number)
@@ -48,13 +78,17 @@ export default async function CoursePage({ searchParams }: PageProps) {
   const { data: subjectRows } = await adminClient.rpc('get_distinct_subjects')
   const subjects: string[] = (subjectRows ?? []).map((r: { subject: string }) => r.subject)
 
-  // Fetch grade data for specific course
+  // Fetch grade data + live sections for specific course
   let records: GradeRecord[] = []
+  let sections: BannerSeatData[] = []
   let groups = new Map<string, GradeRecord[]>()
   let rmpData = new Map<string, RMPData | null>()
 
   if (hasSearch && subject && number) {
-    records = await fetchGrades(subject, number)
+    ;[records, sections] = await Promise.all([
+      fetchGrades(subject, number),
+      fetchSections(subject, number),
+    ])
     groups = groupByProfessor(records)
     const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
     const names = [...groups.keys()].filter(Boolean)
@@ -165,11 +199,11 @@ export default async function CoursePage({ searchParams }: PageProps) {
               </div>
             )}
           </div>
-        ) : records.length === 0 ? (
+        ) : records.length === 0 && sections.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <div className="text-4xl mb-4">📊</div>
             <h3 className="text-h2 text-on-surface mb-2">No data found for {label}</h3>
-            <p className="text-body-md text-secondary">No historical grade data available yet for this course.</p>
+            <p className="text-body-md text-secondary">No sections or grade history available for this course.</p>
           </div>
         ) : (
           <div className="p-8">
@@ -178,7 +212,7 @@ export default async function CoursePage({ searchParams }: PageProps) {
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-primary-container font-bold text-sm tracking-wider">{label} · MISSISSIPPI STATE</span>
                 </div>
-                <h2 className="text-h1 text-on-surface">Grade Distribution</h2>
+                <h2 className="text-h1 text-on-surface">{records.length > 0 ? 'Grade Distribution' : 'Course Sections'}</h2>
               </div>
               <Link
                 href={`/?subject=${subject}&number=${number}#alert-form`}
@@ -189,44 +223,102 @@ export default async function CoursePage({ searchParams }: PageProps) {
               </Link>
             </div>
 
-            {/* Stats row */}
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="bg-white rounded-2xl border border-outline-variant overflow-hidden">
-                <div className="h-1 bg-primary-container" />
-                <div className="p-5">
-                  <p className="text-label-sm text-secondary mb-1 uppercase">Total Records</p>
-                  <p className="font-black text-on-surface" style={{ fontSize: 32 }}>{records.length}</p>
+            {/* Live sections panel */}
+            {sections.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="material-symbols-outlined text-primary-container" style={{ fontSize: 18 }}>event</span>
+                  <h3 className="font-bold text-on-surface text-sm uppercase tracking-wider">Current Sections — {termLabel(CURRENT_TERM_CODE)}</h3>
+                  <span className="text-xs text-secondary bg-gray-100 px-2 py-0.5 rounded-full">{sections.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {sections.map(s => {
+                    const instructor = s.faculty?.find(f => f.primaryIndicator)?.displayName ?? s.faculty?.[0]?.displayName ?? 'TBA'
+                    const mt = s.meetingsFaculty?.[0]?.meetingTime
+                    const days = mt ? buildMeetingDays(mt) : 'TBA'
+                    const time = mt?.beginTime && mt?.endTime
+                      ? `${formatTime(mt.beginTime)}–${formatTime(mt.endTime)}`
+                      : 'TBA'
+                    const location = mt?.building && mt?.room ? `${mt.building} ${mt.room}` : ''
+                    const open = s.seatsAvailable > 0
+                    return (
+                      <div key={s.courseReferenceNumber} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="text-center shrink-0">
+                            <p className="text-[10px] text-secondary uppercase">CRN</p>
+                            <p className="font-mono font-bold text-on-surface text-sm">{s.courseReferenceNumber}</p>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-on-surface text-sm truncate">{instructor}</p>
+                            <p className="text-xs text-secondary truncate">
+                              {days} · {time}{location ? ` · ${location}` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="text-right">
+                            <p className="text-[10px] text-secondary uppercase">Seats</p>
+                            <p className="font-bold text-on-surface text-sm">{s.seatsAvailable}/{s.maximumEnrollment}</p>
+                          </div>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${open ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                            {open ? 'Open' : 'Full'}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
-              <div className="bg-white rounded-2xl border border-outline-variant overflow-hidden">
-                <div className="h-1 bg-primary-container" />
-                <div className="p-5">
-                  <p className="text-label-sm text-secondary mb-1 uppercase">Instructors</p>
-                  <p className="font-black text-on-surface" style={{ fontSize: 32 }}>{groups.size}</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-2xl border border-outline-variant overflow-hidden">
-                <div className="h-1 bg-primary-container" />
-                <div className="p-5">
-                  <p className="text-label-sm text-secondary mb-1 uppercase">Avg GPA</p>
-                  <p className="font-black text-on-surface" style={{ fontSize: 32 }}>
-                    {(() => {
-                      const valid = records.filter(r => r.avg_gpa !== null && (r.total_students ?? 0) > 0)
-                      if (!valid.length) return 'N/A'
-                      const total = valid.reduce((s, r) => s + (r.total_students ?? 0), 0)
-                      const sum = valid.reduce((s, r) => s + r.avg_gpa! * (r.total_students ?? 0), 0)
-                      return (sum / total).toFixed(2)
-                    })()}
-                  </p>
-                </div>
-              </div>
-            </div>
+            )}
 
-            <div className="space-y-4">
-              {[...groups.entries()].map(([prof, recs]) => (
-                <CourseCard key={prof || '__unknown__'} professor={prof || null} records={recs} rmp={rmpData.get(prof) ?? null} />
-              ))}
-            </div>
+            {/* Stats row — only when grade data exists */}
+            {records.length > 0 && (
+              <div className="grid grid-cols-3 gap-4 mb-8">
+                <div className="bg-white rounded-2xl border border-outline-variant overflow-hidden">
+                  <div className="h-1 bg-primary-container" />
+                  <div className="p-5">
+                    <p className="text-label-sm text-secondary mb-1 uppercase">Total Records</p>
+                    <p className="font-black text-on-surface" style={{ fontSize: 32 }}>{records.length}</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl border border-outline-variant overflow-hidden">
+                  <div className="h-1 bg-primary-container" />
+                  <div className="p-5">
+                    <p className="text-label-sm text-secondary mb-1 uppercase">Instructors</p>
+                    <p className="font-black text-on-surface" style={{ fontSize: 32 }}>{groups.size}</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl border border-outline-variant overflow-hidden">
+                  <div className="h-1 bg-primary-container" />
+                  <div className="p-5">
+                    <p className="text-label-sm text-secondary mb-1 uppercase">Avg GPA</p>
+                    <p className="font-black text-on-surface" style={{ fontSize: 32 }}>
+                      {(() => {
+                        const valid = records.filter(r => r.avg_gpa !== null && (r.total_students ?? 0) > 0)
+                        if (!valid.length) return 'N/A'
+                        const total = valid.reduce((s, r) => s + (r.total_students ?? 0), 0)
+                        const sum = valid.reduce((s, r) => s + r.avg_gpa! * (r.total_students ?? 0), 0)
+                        return (sum / total).toFixed(2)
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Grade cards — only when grade data exists */}
+            {records.length > 0 && (
+              <div className="space-y-4">
+                {[...groups.entries()].map(([prof, recs]) => (
+                  <CourseCard key={prof || '__unknown__'} professor={prof || null} records={recs} rmp={rmpData.get(prof) ?? null} />
+                ))}
+              </div>
+            )}
+
+            {/* Note when sections exist but no grade history */}
+            {records.length === 0 && sections.length > 0 && (
+              <p className="text-sm text-secondary text-center py-4">No historical grade data available for this course yet.</p>
+            )}
           </div>
         )}
       </section>
