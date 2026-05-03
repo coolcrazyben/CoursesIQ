@@ -21,8 +21,8 @@ export type Alert = {
   waitlist_total: number | null
 }
 
-function calcProbability(pos: number | null, total: number | null): { label: 'LIKELY' | 'STABLE' | 'UNLIKELY'; pct: number } {
-  if (!pos) return { label: 'STABLE', pct: 50 }
+function calcProbability(pos: number | null, total: number | null): { label: 'LIKELY' | 'STABLE' | 'UNLIKELY' | 'UNKNOWN'; pct: number } {
+  if (!pos) return { label: 'UNKNOWN', pct: 0 }
   const ratio = total ? pos / total : null
   if (ratio !== null) {
     if (ratio <= 0.2) return { label: 'LIKELY',   pct: Math.max(75, Math.round(95 - ratio * 50)) }

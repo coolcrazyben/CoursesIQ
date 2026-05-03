@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import type { Alert } from '@/app/(app)/dashboard/page'
 
-function calcProbability(pos: number | null, total: number | null): { label: 'LIKELY' | 'STABLE' | 'UNLIKELY'; pct: number } {
-  if (!pos) return { label: 'STABLE', pct: 50 }
+type ProbLabel = 'LIKELY' | 'STABLE' | 'UNLIKELY' | 'UNKNOWN'
+
+function calcProbability(pos: number | null, total: number | null): { label: ProbLabel; pct: number } {
+  if (!pos) return { label: 'UNKNOWN', pct: 0 }
   const ratio = total ? pos / total : null
   if (ratio !== null) {
     if (ratio <= 0.2)  return { label: 'LIKELY',   pct: Math.max(75, Math.round(95 - ratio * 50)) }
@@ -16,10 +18,11 @@ function calcProbability(pos: number | null, total: number | null): { label: 'LI
   return              { label: 'UNLIKELY', pct: 18 }
 }
 
-const PROB_STYLES = {
+const PROB_STYLES: Record<ProbLabel, { bar: string; text: string; bg: string; icon: string }> = {
   LIKELY:   { bar: 'bg-green-500',  text: 'text-green-600',  bg: 'bg-green-50',  icon: 'trending_up'   },
   STABLE:   { bar: 'bg-blue-400',   text: 'text-blue-600',   bg: 'bg-blue-50',   icon: 'trending_flat' },
   UNLIKELY: { bar: 'bg-red-500',    text: 'text-red-600',    bg: 'bg-red-50',    icon: 'trending_down' },
+  UNKNOWN:  { bar: 'bg-gray-200',   text: 'text-gray-400',   bg: 'bg-gray-50',   icon: 'help_outline'  },
 }
 
 interface PositionEditorProps {
@@ -128,7 +131,7 @@ export default function DashboardAlerts({ alerts: initial }: Props) {
           const isConfirming = confirmingId === alert.id
           const barWidth = alert.waitlist_position && alert.waitlist_total
             ? Math.round((alert.waitlist_position / alert.waitlist_total) * 100)
-            : 50
+            : 0
 
           return (
             <div key={alert.id} className="flex items-center gap-4 px-6 py-5">
@@ -157,22 +160,26 @@ export default function DashboardAlerts({ alerts: initial }: Props) {
                 <p className="text-sm font-bold text-on-surface mb-1">
                   {alert.waitlist_position
                     ? <><span className="text-primary-container">#{alert.waitlist_position}</span>{alert.waitlist_total ? ` of ${alert.waitlist_total}` : ''}</>
-                    : <span className="text-secondary text-xs">—</span>}
+                    : <span className="text-secondary text-xs">Enter below ↑</span>}
                 </p>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${s.bar}`}
-                    style={{ width: `${Math.min(100, Math.max(4, 100 - barWidth))}%` }}
-                  />
+                  {barWidth > 0 && (
+                    <div
+                      className={`h-full rounded-full transition-all ${s.bar}`}
+                      style={{ width: `${Math.min(100, Math.max(4, 100 - barWidth))}%` }}
+                    />
+                  )}
                 </div>
               </div>
 
               {/* Probability */}
               <div className={`w-28 shrink-0 rounded-xl px-3 py-2 text-center ${s.bg}`}>
-                <p className={`text-[10px] font-bold uppercase tracking-wider ${s.text}`}>{label}</p>
+                <p className={`text-[10px] font-bold uppercase tracking-wider ${s.text}`}>
+                  {label === 'UNKNOWN' ? 'NO DATA' : label}
+                </p>
                 <div className={`flex items-center justify-center gap-0.5 ${s.text}`}>
                   <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{s.icon}</span>
-                  <span className="text-lg font-black">{pct}%</span>
+                  <span className="text-lg font-black">{label === 'UNKNOWN' ? '—' : `${pct}%`}</span>
                 </div>
               </div>
 

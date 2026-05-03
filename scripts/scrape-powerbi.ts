@@ -26,6 +26,9 @@ const deptCacheFile = outFile.replace(/\.csv$/, '.depts.json')
 const DIAGNOSE = args.includes('--diagnose')
 const LIST_DEPTS = args.includes('--list-depts')
 const RESUME = args.includes('--resume')
+// --dept SUBJECT: scrape only the matching department (case-insensitive prefix match)
+const deptArgIdx = args.indexOf('--dept')
+const SINGLE_DEPT = deptArgIdx !== -1 ? args[deptArgIdx + 1]?.toUpperCase() : null
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -540,7 +543,17 @@ async function main() {
   // --- Iterate through each department ---
   // Key insight: reload the page fresh for each dept — this guarantees a clean
   // filter state without relying on the eraser button (which is unreliable).
-  const deptsToProcess = depts.filter(d => !completedDepts.has(d))
+  let deptsToProcess = depts.filter(d => !completedDepts.has(d))
+  if (SINGLE_DEPT) {
+    deptsToProcess = depts.filter(d => d.toUpperCase() === SINGLE_DEPT || d.toUpperCase().startsWith(SINGLE_DEPT))
+    if (deptsToProcess.length === 0) {
+      console.log(`\nNo department matching "${SINGLE_DEPT}" found.`)
+      console.log(`Run with --list-depts to see available departments.`)
+      await browser.close()
+      return
+    }
+    console.log(`\nSingle-dept mode: will only scrape "${deptsToProcess.join(', ')}"`)
+  }
   console.log(`\nDepartments to process: ${deptsToProcess.length} of ${depts.length}`)
 
   for (let i = 0; i < deptsToProcess.length; i++) {

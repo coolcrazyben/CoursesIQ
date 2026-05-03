@@ -260,8 +260,14 @@ export default async function CoursePage({ searchParams }: PageProps) {
                             <p className="text-[10px] text-secondary uppercase">Seats</p>
                             <p className="font-bold text-on-surface text-sm">{s.seatsAvailable}/{s.maximumEnrollment}</p>
                           </div>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${open ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                            {open ? 'Open' : 'Full'}
+                          {s.waitCount > 0 && (
+                            <div className="text-right">
+                              <p className="text-[10px] text-secondary uppercase">Waitlist</p>
+                              <p className="font-bold text-amber-600 text-sm">{s.waitCount}</p>
+                            </div>
+                          )}
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${open ? 'bg-green-50 text-green-700' : s.waitCount > 0 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>
+                            {open ? 'Open' : s.waitCount > 0 ? 'Waitlisted' : 'Full'}
                           </span>
                         </div>
                       </div>
