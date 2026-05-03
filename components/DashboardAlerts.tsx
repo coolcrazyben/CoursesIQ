@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { Alert } from '@/app/(app)/dashboard/page'
+import type { Alert, SeatsInfo } from '@/app/(app)/dashboard/page'
 
 type ProbLabel = 'LIKELY' | 'STABLE' | 'UNLIKELY' | 'UNKNOWN'
 
@@ -85,9 +85,30 @@ function PositionEditor({ alert, onSave }: PositionEditorProps) {
   )
 }
 
-interface Props { alerts: Alert[] }
+function SeatsBadge({ seats }: { seats: SeatsInfo | undefined }) {
+  if (!seats) {
+    return <span className="text-[11px] text-secondary">—</span>
+  }
+  const open = seats.available > 0
+  return (
+    <div className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 ${open ? 'bg-green-50' : 'bg-red-50'}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${open ? 'bg-green-500' : 'bg-red-500'}`} />
+      <span className={`text-sm font-bold ${open ? 'text-green-700' : 'text-red-600'}`}>
+        {seats.available} / {seats.max}
+      </span>
+      <span className={`text-[10px] font-semibold uppercase ${open ? 'text-green-600' : 'text-red-500'}`}>
+        {open ? 'open' : 'full'}
+      </span>
+    </div>
+  )
+}
 
-export default function DashboardAlerts({ alerts: initial }: Props) {
+interface Props {
+  alerts: Alert[]
+  seatsMap: Record<string, SeatsInfo>
+}
+
+export default function DashboardAlerts({ alerts: initial, seatsMap }: Props) {
   const [alerts, setAlerts]       = useState<Alert[]>(initial)
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const [cancelError,  setCancelError]  = useState<string | null>(null)
@@ -126,6 +147,8 @@ export default function DashboardAlerts({ alerts: initial }: Props) {
 
       <div className="divide-y divide-gray-100">
         {alerts.map(alert => {
+          const isSection = Boolean(alert.crn && alert.crn !== '' && alert.section_number)
+          const seats = isSection && alert.crn ? seatsMap[alert.crn] : undefined
           const { label, pct } = calcProbability(alert.waitlist_position, alert.waitlist_total)
           const s = PROB_STYLES[label]
           const isConfirming = confirmingId === alert.id
@@ -139,6 +162,9 @@ export default function DashboardAlerts({ alerts: initial }: Props) {
               <div className="w-14 h-14 bg-primary-container rounded-xl flex flex-col items-center justify-center shrink-0">
                 <span className="text-[9px] text-white/70 font-semibold uppercase tracking-wide leading-tight">{alert.subject}</span>
                 <span className="text-lg font-black text-white leading-tight">{alert.course_number}</span>
+                {alert.section_number && (
+                  <span className="text-[9px] text-white/60 leading-tight">§{alert.section_number}</span>
+                )}
               </div>
 
               {/* Course info */}
@@ -147,41 +173,90 @@ export default function DashboardAlerts({ alerts: initial }: Props) {
                   <p className="font-semibold text-on-surface text-sm">
                     {alert.course_name ?? `${alert.subject} ${alert.course_number}`}
                   </p>
-                  {alert.crn && (
+                  {isSection ? (
+                    <span className="text-[10px] bg-gray-100 text-secondary px-2 py-0.5 rounded font-mono">
+                      §{alert.section_number} · CRN {alert.crn}
+                    </span>
+                  ) : alert.crn ? (
                     <span className="text-[10px] bg-gray-100 text-secondary px-2 py-0.5 rounded font-mono">CRN {alert.crn}</span>
-                  )}
+                  ) : null}
                 </div>
-                <PositionEditor alert={alert} onSave={updatePosition} />
+                {isSection
+                  ? <div className="mt-1"><SeatsBadge seats={seats} /></div>
+                  : <PositionEditor alert={alert} onSave={updatePosition} />
+                }
               </div>
 
-              {/* Waitlist position bar */}
+              {/* Right column: seats count (section) or waitlist bar (course-level) */}
               <div className="w-40 shrink-0 hidden md:block">
-                <p className="text-[10px] text-secondary uppercase tracking-wider mb-1.5 font-semibold">Waitlist Pos.</p>
-                <p className="text-sm font-bold text-on-surface mb-1">
-                  {alert.waitlist_position
-                    ? <><span className="text-primary-container">#{alert.waitlist_position}</span>{alert.waitlist_total ? ` of ${alert.waitlist_total}` : ''}</>
-                    : <span className="text-secondary text-xs">Enter below ↑</span>}
-                </p>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  {barWidth > 0 && (
-                    <div
-                      className={`h-full rounded-full transition-all ${s.bar}`}
-                      style={{ width: `${Math.min(100, Math.max(4, 100 - barWidth))}%` }}
-                    />
-                  )}
-                </div>
+                {isSection ? (
+                  <div>
+                    <p className="text-[10px] text-secondary uppercase tracking-wider mb-1.5 font-semibold">Seats Available</p>
+                    {seats ? (
+                      <>
+                        <p className="text-sm font-bold text-on-surface mb-1">
+                          <span className={seats.available > 0 ? 'text-green-600' : 'text-red-500'}>
+                            {seats.available}
+                          </span>
+                          <span className="text-secondary font-normal"> / {seats.max}</span>
+                        </p>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${seats.available > 0 ? 'bg-green-500' : 'bg-red-400'}`}
+                            style={{ width: `${Math.max(2, Math.round((seats.available / seats.max) * 100))}%` }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-xs text-secondary">Unavailable</p>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-[10px] text-secondary uppercase tracking-wider mb-1.5 font-semibold">Waitlist Pos.</p>
+                    <p className="text-sm font-bold text-on-surface mb-1">
+                      {alert.waitlist_position
+                        ? <><span className="text-primary-container">#{alert.waitlist_position}</span>{alert.waitlist_total ? ` of ${alert.waitlist_total}` : ''}</>
+                        : <span className="text-secondary text-xs">Enter below ↑</span>}
+                    </p>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      {barWidth > 0 && (
+                        <div
+                          className={`h-full rounded-full transition-all ${s.bar}`}
+                          style={{ width: `${Math.min(100, Math.max(4, 100 - barWidth))}%` }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Probability */}
-              <div className={`w-28 shrink-0 rounded-xl px-3 py-2 text-center ${s.bg}`}>
-                <p className={`text-[10px] font-bold uppercase tracking-wider ${s.text}`}>
-                  {label === 'UNKNOWN' ? 'NO DATA' : label}
-                </p>
-                <div className={`flex items-center justify-center gap-0.5 ${s.text}`}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{s.icon}</span>
-                  <span className="text-lg font-black">{label === 'UNKNOWN' ? '—' : `${pct}%`}</span>
+              {/* Status badge */}
+              {isSection ? (
+                <div className={`w-28 shrink-0 rounded-xl px-3 py-2 text-center ${seats === undefined ? 'bg-gray-50' : seats.available > 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-wider ${seats === undefined ? 'text-gray-400' : seats.available > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {seats === undefined ? 'NO DATA' : seats.available > 0 ? 'OPEN' : 'FULL'}
+                  </p>
+                  <div className={`flex items-center justify-center gap-0.5 ${seats === undefined ? 'text-gray-400' : seats.available > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+                      {seats === undefined ? 'help_outline' : seats.available > 0 ? 'lock_open' : 'lock'}
+                    </span>
+                    <span className="text-lg font-black">
+                      {seats === undefined ? '—' : String(seats.available)}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className={`w-28 shrink-0 rounded-xl px-3 py-2 text-center ${s.bg}`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-wider ${s.text}`}>
+                    {label === 'UNKNOWN' ? 'NO DATA' : label}
+                  </p>
+                  <div className={`flex items-center justify-center gap-0.5 ${s.text}`}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{s.icon}</span>
+                    <span className="text-lg font-black">{label === 'UNKNOWN' ? '—' : `${pct}%`}</span>
+                  </div>
+                </div>
+              )}
 
               {/* Remove */}
               <button

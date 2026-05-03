@@ -545,7 +545,12 @@ async function main() {
   // filter state without relying on the eraser button (which is unreliable).
   let deptsToProcess = depts.filter(d => !completedDepts.has(d))
   if (SINGLE_DEPT) {
-    deptsToProcess = depts.filter(d => d.toUpperCase() === SINGLE_DEPT || d.toUpperCase().startsWith(SINGLE_DEPT))
+    const acronym = (name: string) => name.split(/\s+/).map(w => w[0] ?? '').join('').toUpperCase()
+    deptsToProcess = depts.filter(d =>
+      d.toUpperCase() === SINGLE_DEPT ||
+      d.toUpperCase().startsWith(SINGLE_DEPT) ||
+      acronym(d) === SINGLE_DEPT
+    )
     if (deptsToProcess.length === 0) {
       console.log(`\nNo department matching "${SINGLE_DEPT}" found.`)
       console.log(`Run with --list-depts to see available departments.`)

@@ -11,11 +11,30 @@ interface Suggestion {
   label: string
 }
 
+interface SectionOption {
+  crn: string
+  section: string
+  instructor: string | null
+  days: string
+  beginTime: string
+  endTime: string
+  seatsAvailable: number
+  maximumEnrollment: number
+}
+
 interface AlertFormProps {
   initialSubject?: string
   initialCourse?: string
   prefillEmail?: string
   onSuccess?: () => void
+}
+
+function formatTime(t: string): string {
+  if (!t || t.length !== 4) return t
+  const h = parseInt(t.slice(0, 2), 10)
+  const m = t.slice(2)
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  return `${h > 12 ? h - 12 : h || 12}:${m} ${ampm}`
 }
 
 export default function AlertForm({ initialSubject, initialCourse, prefillEmail, onSuccess }: AlertFormProps = {}) {
@@ -34,6 +53,12 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
   const [email, setEmail] = useState(prefillEmail ?? '')
   const [status, setStatus] = useState<FormStatus>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+
+  // Section picker state
+  const [sections, setSections] = useState<SectionOption[]>([])
+  const [sectionsLoading, setSectionsLoading] = useState(false)
+  const [selectedSection, setSelectedSection] = useState<SectionOption | null>(null) // null = any section
+
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -54,6 +79,30 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
       }
     }, 300)
   }, [query, selected])
+
+  // Fetch sections when a course is selected
+  useEffect(() => {
+    if (!selected) { setSections([]); setSelectedSection(null); return }
+    setSectionsLoading(true)
+    setSections([])
+    setSelectedSection(null)
+    fetch(`/api/sections?subject=${encodeURIComponent(selected.subject)}&number=${encodeURIComponent(selected.course_number)}`)
+      .then(r => r.ok ? r.json() : [])
+      .then((data: Array<{ crn: string; section: string; instructor: string | null; meetingTimes: Array<{ days: string; beginTime: string; endTime: string }>; seatsAvailable: number; maximumEnrollment: number }>) => {
+        setSections(data.map(s => ({
+          crn: s.crn,
+          section: s.section,
+          instructor: s.instructor,
+          days: s.meetingTimes?.[0]?.days ?? '',
+          beginTime: s.meetingTimes?.[0]?.beginTime ?? '',
+          endTime: s.meetingTimes?.[0]?.endTime ?? '',
+          seatsAvailable: s.seatsAvailable,
+          maximumEnrollment: s.maximumEnrollment,
+        })))
+        setSectionsLoading(false)
+      })
+      .catch(() => { setSections([]); setSectionsLoading(false) })
+  }, [selected])
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -76,6 +125,8 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
     setQuery('')
     setSuggestions([])
     setOpen(false)
+    setSections([])
+    setSelectedSection(null)
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -101,14 +152,21 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
     setStatus('submitting')
 
     try {
+      const body: Record<string, string> = {
+        subject: selected.subject,
+        course_number: selected.course_number,
+        email: email.trim(),
+      }
+      if (selectedSection) {
+        body.crn = selectedSection.crn
+        body.section_number = selectedSection.section
+        body.course_name = selected.label
+      }
+
       const res = await fetch('/api/alerts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subject: selected.subject,
-          course_number: selected.course_number,
-          email: email.trim(),
-        }),
+        body: JSON.stringify(body),
       })
 
       if (res.status === 201) {
@@ -117,13 +175,13 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
         return
       }
 
-      const body = await res.json().catch(() => ({}))
+      const resBody = await res.json().catch(() => ({}))
       if (res.status === 409) {
         setErrorMessage('You already have an active alert for this course.')
       } else if (res.status === 402) {
         setErrorMessage('Free plan limit reached. Upgrade to Pro for unlimited alerts.')
       } else {
-        setErrorMessage(body.error ?? 'Something went wrong. Please try again.')
+        setErrorMessage(resBody.error ?? 'Something went wrong. Please try again.')
       }
       setStatus('error')
     } catch {
@@ -133,6 +191,7 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
   }
 
   if (status === 'success') {
+    const sectionLabel = selectedSection ? ` §${selectedSection.section}` : ''
     return (
       <div className="py-6 text-center">
         <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -143,7 +202,7 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
         <p className="text-gray-900 font-semibold text-lg">You&apos;re all set!</p>
         <p className="text-gray-600 mt-1 text-sm">
           We&apos;ll email you the moment a seat opens in{' '}
-          <strong>{selected?.label ?? 'that course'}</strong>.
+          <strong>{selected?.label ?? 'that course'}{sectionLabel}</strong>.
         </p>
         <a href="/course" className="inline-block mt-5 text-sm text-maroon font-medium hover:underline">
           View grade history and professor ratings →
@@ -205,6 +264,82 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
           </p>
         )}
       </div>
+
+      {/* Section picker — shown after a course is selected */}
+      {selected && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Section</label>
+          {sectionsLoading ? (
+            <div className="flex items-center gap-2 py-3 text-sm text-gray-500">
+              <svg className="animate-spin w-4 h-4 text-maroon" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              Loading sections...
+            </div>
+          ) : sections.length === 0 ? (
+            <p className="text-xs text-gray-500 py-2">No section data available — will alert for any open seat.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+              {/* Any section option */}
+              <label className={`flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-colors ${
+                selectedSection === null ? 'border-maroon bg-maroon/5' : 'border-gray-200 hover:border-gray-300'
+              }`}>
+                <input
+                  type="radio"
+                  name="section"
+                  checked={selectedSection === null}
+                  onChange={() => setSelectedSection(null)}
+                  className="accent-maroon"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800">Any open section</p>
+                  <p className="text-xs text-gray-500">Alert me when any section has a seat</p>
+                </div>
+              </label>
+
+              {/* Specific sections */}
+              {sections.map(sec => {
+                const isOpen = sec.seatsAvailable > 0
+                return (
+                  <label key={sec.crn} className={`flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-colors ${
+                    selectedSection?.crn === sec.crn ? 'border-maroon bg-maroon/5' : 'border-gray-200 hover:border-gray-300'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="section"
+                      checked={selectedSection?.crn === sec.crn}
+                      onChange={() => setSelectedSection(sec)}
+                      className="accent-maroon"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-gray-800">§{sec.section}</span>
+                        <span className="text-[10px] font-mono text-gray-400">CRN {sec.crn}</span>
+                        {sec.instructor && (
+                          <span className="text-xs text-gray-600 truncate">{sec.instructor}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {sec.days && (
+                          <span className="text-xs text-gray-500">
+                            {sec.days} {sec.beginTime ? `${formatTime(sec.beginTime)}–${formatTime(sec.endTime)}` : ''}
+                          </span>
+                        )}
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                          isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                        }`}>
+                          {sec.seatsAvailable}/{sec.maximumEnrollment} {isOpen ? 'open' : 'full'}
+                        </span>
+                      </div>
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Email — hidden when pre-filled from session */}
       {prefillEmail ? (

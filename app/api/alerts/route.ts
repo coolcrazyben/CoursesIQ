@@ -9,6 +9,7 @@ import { getUserPlan, FREE_LIMITS } from '@/lib/subscription'
 
 const AlertSchema = z.object({
   crn: z.string().optional(),
+  section_number: z.string().optional(),
   subject: z.string().min(1),
   course_number: z.string().min(1),
   email: z.string().email(),
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  const { crn, subject, course_number, email, phone_number, course_name, term_code } =
+  const { crn, section_number, subject, course_number, email, phone_number, course_name, term_code } =
     result.data
 
   // 2. Free-tier limit: max 1 active alert per user
@@ -71,22 +72,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // 3. Check for duplicate alert — deduplicate by subject+course_number+email
-  const { data: existing, error: selectError } = await adminClient
-    .from('alerts')
-    .select('id')
-    .eq('subject', subject)
-    .eq('course_number', course_number)
-    .eq('email', email)
-    .eq('is_active', true)
-    .maybeSingle()
+  // 3. Check for duplicate alert.
+  // Section-specific (has CRN): dedup by crn+email.
+  // Course-level (no CRN): dedup by subject+course_number+email (crn='').
+  const dupQuery = adminClient.from('alerts').select('id').eq('email', email).eq('is_active', true)
+  const dupResult = crn
+    ? await dupQuery.eq('crn', crn).maybeSingle()
+    : await dupQuery.eq('subject', subject).eq('course_number', course_number).eq('crn', '').maybeSingle()
 
-  if (selectError) {
-    console.error('[api/alerts] Supabase duplicate check error:', selectError.message)
+  if (dupResult.error) {
+    console.error('[api/alerts] Supabase duplicate check error:', dupResult.error.message)
     return NextResponse.json({ error: 'Failed to create alert' }, { status: 500 })
   }
 
-  if (existing) {
+  if (dupResult.data) {
     return NextResponse.json(
       { error: 'Alert already exists for this course and email' },
       { status: 409 }
@@ -94,12 +93,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // 4. Insert new alert row, or reactivate a previously cancelled one.
-  // crn is '' when not provided, so the unique constraint (crn, email) means only one
-  // row ever exists per email. Use upsert to handle the re-tracking case without a 409.
   const { data, error } = await adminClient
     .from('alerts')
     .upsert({
       crn: crn ?? '',
+      section_number: section_number ?? null,
       subject,
       course_number,
       course_name: course_name ?? null,

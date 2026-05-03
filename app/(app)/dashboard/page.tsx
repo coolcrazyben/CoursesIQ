@@ -6,6 +6,7 @@ import DashboardAlerts from '@/components/DashboardAlerts'
 import AddAlertModal from '@/components/AddAlertModal'
 import { getUserPlan } from '@/lib/subscription'
 import { stripe } from '@/lib/stripe'
+import { getSectionsByCourse } from '@/lib/banner'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = { title: 'Waitlist Tracker — CoursesIQ' }
@@ -13,6 +14,7 @@ export const metadata: Metadata = { title: 'Waitlist Tracker — CoursesIQ' }
 export type Alert = {
   id: string
   crn: string | null
+  section_number: string | null
   subject: string
   course_number: string
   course_name: string | null
@@ -20,6 +22,8 @@ export type Alert = {
   waitlist_position: number | null
   waitlist_total: number | null
 }
+
+export type SeatsInfo = { available: number; max: number }
 
 function calcProbability(pos: number | null, total: number | null): { label: 'LIKELY' | 'STABLE' | 'UNLIKELY' | 'UNKNOWN'; pct: number } {
   if (!pos) return { label: 'UNKNOWN', pct: 0 }
@@ -88,6 +92,33 @@ async function syncSubscriptionFromStripe(userId: string) {
   }
 }
 
+async function fetchSeatsMap(alerts: Alert[]): Promise<Record<string, SeatsInfo>> {
+  const sectionAlerts = alerts.filter(a => a.crn && a.crn !== '' && a.section_number)
+  if (sectionAlerts.length === 0) return {}
+
+  // Deduplicate by subject+course_number to minimize Banner calls
+  const seen = new Set<string>()
+  const pairs: { subject: string; course_number: string }[] = []
+  for (const a of sectionAlerts) {
+    const key = `${a.subject}|${a.course_number}`
+    if (!seen.has(key)) { seen.add(key); pairs.push({ subject: a.subject, course_number: a.course_number }) }
+  }
+
+  const seatsMap: Record<string, SeatsInfo> = {}
+  await Promise.all(pairs.map(async ({ subject, course_number }) => {
+    try {
+      const sections = await getSectionsByCourse(subject, course_number)
+      for (const s of sections) {
+        seatsMap[s.courseReferenceNumber] = { available: s.seatsAvailable, max: s.maximumEnrollment }
+      }
+    } catch {
+      // Banner unavailable — leave CRN out of map; UI will show no seat data
+    }
+  }))
+
+  return seatsMap
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -107,12 +138,13 @@ export default async function DashboardPage({
 
   const { data } = await adminClient
     .from('alerts')
-    .select('id, crn, subject, course_number, course_name, created_at, waitlist_position, waitlist_total')
+    .select('id, crn, section_number, subject, course_number, course_name, created_at, waitlist_position, waitlist_total')
     .eq('email', email)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
   const alerts: Alert[] = data ?? []
+  const seatsMap = await fetchSeatsMap(alerts)
 
   const probs = alerts.map(a => calcProbability(a.waitlist_position, a.waitlist_total))
   const likelyCount   = probs.filter(p => p.label === 'LIKELY').length
@@ -174,7 +206,7 @@ export default async function DashboardPage({
             <span className="text-xs text-secondary">Live</span>
           </div>
         </div>
-        <DashboardAlerts alerts={alerts} />
+        <DashboardAlerts alerts={alerts} seatsMap={seatsMap} />
       </div>
 
       {/* How likelihood is calculated */}
