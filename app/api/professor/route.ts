@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { adminClient as supabase } from '@/lib/supabase/admin'
 import { searchProfessor } from '@/lib/rmp'
 
 const CACHE_TTL_DAYS = 7
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 function normalizeName(name: string): string {
   return name.toLowerCase().trim().replace(/\s+/g, ' ')

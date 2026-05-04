@@ -5,6 +5,19 @@ const nextConfig: NextConfig = {
   // Twilio uses Node.js native modules not in Next.js built-in externals list.
   // Must be explicit here AND routes must export `const runtime = 'nodejs'`.
   serverExternalPackages: ['twilio'],
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        ],
+      },
+    ]
+  },
   async rewrites() {
     return [
       {

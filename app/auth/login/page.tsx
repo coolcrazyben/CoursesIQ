@@ -17,8 +17,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const next = params.get('next')
-    if (next) setNextPath(next)
+    const rawNext = params.get('next')
+    const isSafeInternalPath = (path: string) => /^\/[^/]/.test(path) && !path.startsWith('//')
+    if (rawNext && isSafeInternalPath(rawNext)) setNextPath(rawNext)
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {

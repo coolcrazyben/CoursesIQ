@@ -26,6 +26,19 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   const { id, waitlist_position, waitlist_total } = body as { id?: string; waitlist_position?: number | null; waitlist_total?: number | null }
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { data: alertRecord } = await adminClient
+    .from('alerts')
+    .select('email')
+    .eq('id', id)
+    .single()
+  if (!alertRecord || alertRecord.email !== user.email) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const { error } = await adminClient
     .from('alerts')
     .update({ waitlist_position: waitlist_position ?? null, waitlist_total: waitlist_total ?? null })
@@ -60,12 +73,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const { data: { user } } = await supabase.auth.getUser()
   const userId = user?.id ?? null
 
+  if (user && user.email !== email) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  const effectiveEmail = user?.email ?? email
+
   const plan = userId ? await getUserPlan(userId) : 'free'
   if (plan === 'free') {
     const { count } = await adminClient
       .from('alerts')
       .select('*', { count: 'exact', head: true })
-      .eq('email', email)
+      .eq('email', effectiveEmail)
       .eq('is_active', true)
     if ((count ?? 0) >= FREE_LIMITS.alerts) {
       return NextResponse.json({ error: 'UPGRADE_REQUIRED', limit: FREE_LIMITS.alerts }, { status: 402 })
@@ -75,7 +93,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // 3. Check for duplicate alert.
   // Section-specific (has CRN): dedup by crn+email.
   // Course-level (no CRN): dedup by subject+course_number+email (crn='').
-  const dupQuery = adminClient.from('alerts').select('id').eq('email', email).eq('is_active', true)
+  const dupQuery = adminClient.from('alerts').select('id').eq('email', effectiveEmail).eq('is_active', true)
   const dupResult = crn
     ? await dupQuery.eq('crn', crn).maybeSingle()
     : await dupQuery.eq('subject', subject).eq('course_number', course_number).eq('crn', '').maybeSingle()
@@ -101,7 +119,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       subject,
       course_number,
       course_name: course_name ?? null,
-      email,
+      email: effectiveEmail,
       phone_number: phone_number ?? null,
       school: 'MSU',
       term_code: term_code ?? CURRENT_TERM_CODE,
