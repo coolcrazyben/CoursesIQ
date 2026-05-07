@@ -1,17 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
-import AlertForm from '@/components/AlertForm'
 import Link from 'next/link'
 import MarketingHeader from '@/components/MarketingHeader'
+import CourseSearch from '@/components/CourseSearch'
 
 export const dynamic = 'force-dynamic'
 
-interface PageProps {
-  searchParams: Promise<{ subject?: string; number?: string }>
-}
-
-export default async function LandingPage({ searchParams }: PageProps) {
-  const { subject: urlSubject, number: urlNumber } = await searchParams
-
+export default async function LandingPage() {
   const supabase = await createClient()
 
   const { count } = await supabase
@@ -90,41 +84,55 @@ export default async function LandingPage({ searchParams }: PageProps) {
 
               <div className="flex flex-wrap gap-3">
                 <a
-                  href="#alert-form"
+                  href="/course"
                   className="bg-primary-container text-white px-7 py-3.5 rounded-full text-body-lg font-semibold flex items-center gap-2 hover:shadow-lg transition-all hover:opacity-90"
                 >
-                  Get Seat Alerts
+                  Browse Courses
                   <span className="material-symbols-outlined">arrow_forward</span>
                 </a>
                 <a
-                  href="/course"
+                  href="/auth/login"
                   className="border-2 border-primary-container text-primary-container px-7 py-3.5 rounded-full text-body-lg font-semibold hover:bg-primary-fixed/30 transition-colors"
                 >
-                  Browse Grade Data
+                  Get Seat Alerts
                 </a>
               </div>
             </div>
 
-            {/* Right — AlertForm card */}
-            <div
-              id="alert-form"
-              className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant shadow-xl"
-            >
+            {/* Right — Course Search card */}
+            <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant shadow-xl">
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-9 h-9 bg-primary-container rounded-lg flex items-center justify-center shrink-0">
                   <span
                     className="material-symbols-outlined text-white"
                     style={{ fontSize: 18, fontVariationSettings: "'FILL' 1" }}
                   >
-                    notifications_active
+                    search
                   </span>
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-on-surface leading-tight">Set up a seat alert</h2>
-                  <p className="text-xs text-secondary">Email you when enrollment opens</p>
+                  <h2 className="text-sm font-bold text-on-surface leading-tight">Search any MSU course</h2>
+                  <p className="text-xs text-secondary">Grade data, seat counts, professor ratings</p>
                 </div>
               </div>
-              <AlertForm initialSubject={urlSubject} initialCourse={urlNumber} />
+              <CourseSearch />
+              <div className="mt-4">
+                <p className="text-[10px] text-secondary uppercase tracking-widest font-semibold mb-2">Popular searches</p>
+                <div className="flex flex-wrap gap-2">
+                  {['CSE 1284', 'BIO 1103', 'MA 1713', 'ENG 1103', 'CH 1213'].map(c => {
+                    const [subj, num] = c.split(' ')
+                    return (
+                      <a
+                        key={c}
+                        href={`/course?subject=${subj}&number=${num}`}
+                        className="text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1 rounded-full hover:border-primary-container/40 hover:text-primary-container transition-colors"
+                      >
+                        {c}
+                      </a>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -702,16 +710,16 @@ export default async function LandingPage({ searchParams }: PageProps) {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10">
               <a
-                href="#alert-form"
+                href="/course"
                 className="bg-white text-primary-container px-10 py-4 rounded-full font-bold hover:shadow-xl transition-all hover:scale-105"
               >
-                Set Up a Free Alert
+                Browse Courses Free
               </a>
               <a
-                href="/course"
+                href="/auth/login"
                 className="bg-white/10 border border-white/20 text-white px-10 py-4 rounded-full font-bold hover:bg-white/20 transition-all"
               >
-                Browse Grade Data
+                Set Up Seat Alerts
               </a>
             </div>
           </div>

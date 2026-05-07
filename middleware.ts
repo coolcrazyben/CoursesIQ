@@ -28,10 +28,10 @@ export async function middleware(req: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protect /planner, /dashboard, and /course
+  // Protect /planner and /dashboard (course browsing is public)
   const pathname = req.nextUrl.pathname
   if (
-    (pathname.startsWith('/planner') || pathname.startsWith('/dashboard') || pathname.startsWith('/course')) &&
+    (pathname.startsWith('/planner') || pathname.startsWith('/dashboard')) &&
     !user
   ) {
     const loginUrl = new URL('/auth/login', req.url)
@@ -43,5 +43,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/planner/:path*', '/dashboard/:path*', '/course/:path*'],
+  matcher: ['/planner/:path*', '/dashboard/:path*'],
 }
