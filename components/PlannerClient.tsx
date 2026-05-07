@@ -9,6 +9,7 @@ import WeeklyCalendar from '@/components/WeeklyCalendar'
 import CourseSummaryPanel from '@/components/CourseSummaryPanel'
 import AlternativesModal from '@/components/AlternativesModal'
 import type { AlternativeSection } from '@/components/AlternativesModal'
+import { trackFirstScheduleSaved } from '@/lib/analytics'
 
 interface Props {
   initialSchedules: Schedule[]
@@ -182,7 +183,13 @@ export default function PlannerClient({ initialSchedules, initialCourses, userId
       .from('schedules')
       .insert({ user_id: userId, name: `Schedule ${schedules.length + 1}` })
       .select().single()
-    if (!error && data) { setSchedules(prev => [...prev, data]); setSelectedId(data.id) }
+    if (!error && data) {
+      setSchedules(prev => {
+        if (prev.length === 0) trackFirstScheduleSaved()
+        return [...prev, data]
+      })
+      setSelectedId(data.id)
+    }
   }
 
   async function deleteSchedule(id: string) {

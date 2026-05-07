@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { trackFirstAlertCreated } from '@/lib/analytics'
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error'
 
@@ -170,6 +171,7 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
       })
 
       if (res.status === 201) {
+        trackFirstAlertCreated({ subject: selected.subject, course_number: selected.course_number })
         setStatus('success')
         onSuccess?.()
         return

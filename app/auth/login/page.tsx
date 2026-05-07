@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { trackSignupComplete, trackReferredSignup } from '@/lib/analytics'
 
 type Mode = 'signin' | 'signup'
 
@@ -20,6 +21,10 @@ export default function LoginPage() {
     const rawNext = params.get('next')
     const isSafeInternalPath = (path: string) => /^\/[^/]/.test(path) && !path.startsWith('//')
     if (rawNext && isSafeInternalPath(rawNext)) setNextPath(rawNext)
+    const refCode = params.get('ref')
+    if (refCode) {
+      try { sessionStorage.setItem('ref_code', refCode) } catch { /* ignore */ }
+    }
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -56,6 +61,16 @@ export default function LoginPage() {
       if (err) {
         setError(err.message)
       } else {
+        const refCode = (() => { try { return sessionStorage.getItem('ref_code') } catch { return null } })()
+        trackSignupComplete({ method: 'email', referred_by: refCode })
+        if (refCode) {
+          trackReferredSignup({ referrer_code: refCode })
+          fetch('/api/referral/record', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ referrer_code: refCode, referred_email: email }),
+          }).catch(() => null)
+        }
         setSignupSent(true)
       }
     }

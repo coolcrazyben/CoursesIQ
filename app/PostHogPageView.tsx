@@ -3,11 +3,16 @@
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import { usePostHog } from 'posthog-js/react'
+import { captureUTM } from '@/lib/analytics'
 
 export function PostHogPageView() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const posthog = usePostHog()
+
+  useEffect(() => {
+    captureUTM()
+  }, [])
 
   useEffect(() => {
     if (pathname && posthog) {

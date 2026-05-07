@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { Alert, SeatsInfo, Snapshot } from '@/app/(app)/dashboard/page'
 import { calcProbability, type ProbLabel } from '@/lib/probability'
+import DidYouGetInSurvey from '@/components/DidYouGetInSurvey'
 
 const PROB_STYLES: Record<ProbLabel, { bar: string; text: string; bg: string; icon: string }> = {
   LIKELY:   { bar: 'bg-green-500',  text: 'text-green-600',  bg: 'bg-green-50',  icon: 'trending_up'   },
@@ -94,9 +95,11 @@ interface Props {
   seatsMap: Record<string, SeatsInfo>
   dfwMap: Record<string, number>
   snapshotsMap: Record<string, Snapshot[]>
+  hasFiredMap: Record<string, boolean>
+  hasOutcomeMap: Record<string, boolean>
 }
 
-export default function DashboardAlerts({ alerts: initial, seatsMap, dfwMap, snapshotsMap }: Props) {
+export default function DashboardAlerts({ alerts: initial, seatsMap, dfwMap, snapshotsMap, hasFiredMap, hasOutcomeMap }: Props) {
   const [alerts, setAlerts]       = useState<Alert[]>(initial)
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const [cancelError,  setCancelError]  = useState<string | null>(null)
@@ -158,8 +161,13 @@ export default function DashboardAlerts({ alerts: initial, seatsMap, dfwMap, sna
               })()
             : null
 
+          const hasFired = hasFiredMap[alert.id] ?? false
+          const hasOutcome = hasOutcomeMap[alert.id] ?? false
+          const courseName = alert.course_name ?? `${alert.subject} ${alert.course_number}`
+
           return (
-            <div key={alert.id} className="flex items-center gap-4 px-6 py-5">
+            <div key={alert.id} className="px-6 py-5">
+            <div className="flex items-center gap-4">
               {/* Subject badge */}
               <div className="w-14 h-14 bg-primary-container rounded-xl flex flex-col items-center justify-center shrink-0">
                 <span className="text-[9px] text-white/70 font-semibold uppercase tracking-wide leading-tight">{alert.subject}</span>
@@ -282,6 +290,10 @@ export default function DashboardAlerts({ alerts: initial, seatsMap, dfwMap, sna
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
               </button>
+            </div>
+            {hasFired && !hasOutcome && (
+              <DidYouGetInSurvey alertId={alert.id} courseName={courseName} />
+            )}
             </div>
           )
         })}

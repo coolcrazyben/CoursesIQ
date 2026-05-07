@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { adminClient } from '@/lib/supabase/admin'
 import DashboardAlerts from '@/components/DashboardAlerts'
 import AddAlertModal from '@/components/AddAlertModal'
+import ReferralPrompt from '@/components/ReferralPrompt'
 import { getUserPlan } from '@/lib/subscription'
 import { stripe } from '@/lib/stripe'
 import { getSectionsByCourse } from '@/lib/banner'
@@ -19,6 +20,7 @@ export type Alert = {
   course_number: string
   course_name: string | null
   created_at: string
+  sent_at: string | null
   waitlist_position: number | null
   waitlist_total: number | null
 }
@@ -128,6 +130,18 @@ async function fetchDFWMap(alerts: Alert[]): Promise<Record<string, number>> {
   return dfwMap
 }
 
+async function fetchOutcomesMap(alerts: Alert[]): Promise<Record<string, boolean>> {
+  const ids = alerts.map(a => a.id)
+  if (!ids.length) return {}
+  const { data } = await adminClient
+    .from('enrollment_outcomes')
+    .select('alert_id')
+    .in('alert_id', ids)
+  const map: Record<string, boolean> = {}
+  for (const row of data ?? []) map[row.alert_id] = true
+  return map
+}
+
 async function fetchSnapshotsMap(alerts: Alert[]): Promise<Record<string, Snapshot[]>> {
   const ids = alerts.map(a => a.id)
   if (!ids.length) return {}
@@ -163,17 +177,21 @@ export default async function DashboardPage({
 
   const { data } = await adminClient
     .from('alerts')
-    .select('id, crn, section_number, subject, course_number, course_name, created_at, waitlist_position, waitlist_total')
+    .select('id, crn, section_number, subject, course_number, course_name, created_at, sent_at, waitlist_position, waitlist_total')
     .eq('email', email)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
   const alerts: Alert[] = data ?? []
-  const [seatsMap, dfwMap, snapshotsMap] = await Promise.all([
+  const [seatsMap, dfwMap, snapshotsMap, outcomesMap] = await Promise.all([
     fetchSeatsMap(alerts),
     fetchDFWMap(alerts),
     fetchSnapshotsMap(alerts),
+    fetchOutcomesMap(alerts),
   ])
+
+  const hasFiredMap: Record<string, boolean> = {}
+  for (const a of alerts) hasFiredMap[a.id] = a.sent_at !== null
 
   const probs = alerts.map(a => {
     const dfwRate  = dfwMap[`${a.subject}|${a.course_number}`] ?? null
@@ -239,8 +257,15 @@ export default async function DashboardPage({
             <span className="text-xs text-secondary">Live</span>
           </div>
         </div>
-        <DashboardAlerts alerts={alerts} seatsMap={seatsMap} dfwMap={dfwMap} snapshotsMap={snapshotsMap} />
+        <DashboardAlerts alerts={alerts} seatsMap={seatsMap} dfwMap={dfwMap} snapshotsMap={snapshotsMap} hasFiredMap={hasFiredMap} hasOutcomeMap={outcomesMap} />
       </div>
+
+      {/* Referral prompt — shown whenever user has tracked courses */}
+      {alerts.length > 0 && (
+        <div className="mb-8">
+          <ReferralPrompt />
+        </div>
+      )}
 
       {/* How likelihood is calculated */}
       <div className="bg-primary-fixed/30 border border-primary-fixed rounded-xl p-6">
