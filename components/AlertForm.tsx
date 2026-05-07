@@ -177,9 +177,9 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
 
       const resBody = await res.json().catch(() => ({}))
       if (res.status === 409) {
-        setErrorMessage('You already have an active alert for this course.')
+        setErrorMessage('This course is already on your watchlist.')
       } else if (res.status === 402) {
-        setErrorMessage('Free plan limit reached. Upgrade to Pro for unlimited alerts.')
+        setErrorMessage('Free plan limit reached. Upgrade to Pro for unlimited watchlist entries.')
       } else {
         setErrorMessage(resBody.error ?? 'Something went wrong. Please try again.')
       }
@@ -201,11 +201,11 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
         </div>
         <p className="text-gray-900 font-semibold text-lg">You&apos;re all set!</p>
         <p className="text-gray-600 mt-1 text-sm">
-          We&apos;ll email you the moment a seat opens in{' '}
-          <strong>{selected?.label ?? 'that course'}{sectionLabel}</strong>.
+          <strong>{selected?.label ?? 'That course'}{sectionLabel}</strong> is now on your watchlist.
+          Track your position from the dashboard.
         </p>
-        <a href="/course" className="inline-block mt-5 text-sm text-maroon font-medium hover:underline">
-          View grade history and professor ratings →
+        <a href="/dashboard" className="inline-block mt-5 text-sm text-maroon font-medium hover:underline">
+          Go to your watchlist →
         </a>
       </div>
     )
@@ -293,8 +293,8 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
                   className="accent-maroon"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800">Any open section</p>
-                  <p className="text-xs text-gray-500">Alert me when any section has a seat</p>
+                  <p className="text-sm font-medium text-gray-800">Any section</p>
+                  <p className="text-xs text-gray-500">Track any section on your watchlist</p>
                 </div>
               </label>
 
@@ -370,7 +370,7 @@ export default function AlertForm({ initialSubject, initialCourse, prefillEmail,
         disabled={status === 'submitting' || !selected}
         className="w-full bg-maroon text-white py-3 px-4 rounded-xl text-base font-semibold hover:bg-maroon-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {status === 'submitting' ? 'Setting up alert...' : 'Alert Me When a Seat Opens'}
+        {status === 'submitting' ? 'Adding to watchlist...' : 'Add to Watchlist'}
       </button>
     </form>
   )

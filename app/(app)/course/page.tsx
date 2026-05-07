@@ -60,6 +60,23 @@ function buildMeetingDays(mt: MeetingTime): string {
   return days.filter(([k]) => mt[k] as boolean).map(([, v]) => v).join('') || 'TBA'
 }
 
+function fillGaugeColors(seatsAvailable: number, maxEnrollment: number, waitCount: number) {
+  if (seatsAvailable === 0 && waitCount > 0)
+    return { bar: 'bg-amber-400', track: 'bg-amber-100', badge: 'bg-amber-50 text-amber-700', label: 'Waitlisted' }
+  if (maxEnrollment === 0)
+    return { bar: 'bg-gray-300', track: 'bg-gray-100', badge: 'bg-gray-50 text-gray-500', label: 'Unknown' }
+  const fillPct = ((maxEnrollment - seatsAvailable) / maxEnrollment) * 100
+  if (seatsAvailable === 0)
+    return { bar: 'bg-red-500', track: 'bg-red-100', badge: 'bg-red-50 text-red-700', label: 'Full', fillPct: 100 }
+  if (fillPct < 50)
+    return { bar: 'bg-green-500', track: 'bg-green-100', badge: 'bg-green-50 text-green-700', label: 'Open', fillPct }
+  if (fillPct < 80)
+    return { bar: 'bg-yellow-400', track: 'bg-yellow-100', badge: 'bg-yellow-50 text-yellow-700', label: 'Filling', fillPct }
+  if (fillPct < 95)
+    return { bar: 'bg-orange-400', track: 'bg-orange-100', badge: 'bg-orange-50 text-orange-700', label: 'Almost Full', fillPct }
+  return { bar: 'bg-red-500', track: 'bg-red-100', badge: 'bg-red-50 text-red-700', label: 'Nearly Full', fillPct }
+}
+
 function termLabel(code: string): string {
   const tt = code.slice(4)
   const year = code.slice(0, 4)
@@ -240,35 +257,45 @@ export default async function CoursePage({ searchParams }: PageProps) {
                       ? `${formatTime(mt.beginTime)}–${formatTime(mt.endTime)}`
                       : 'TBA'
                     const location = mt?.building && mt?.room ? `${mt.building} ${mt.room}` : ''
-                    const open = s.seatsAvailable > 0
+                    const gauge = fillGaugeColors(s.seatsAvailable, s.maximumEnrollment, s.waitCount)
+                    const fillPct = gauge.fillPct ?? (s.seatsAvailable === 0 ? 100 : 0)
                     return (
-                      <div key={s.courseReferenceNumber} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 min-w-0">
-                          <div className="text-center shrink-0">
-                            <p className="text-[10px] text-secondary uppercase">CRN</p>
-                            <p className="font-mono font-bold text-on-surface text-sm">{s.courseReferenceNumber}</p>
+                      <div key={s.courseReferenceNumber} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                        <div className="flex items-center justify-between gap-4 mb-2">
+                          <div className="flex items-center gap-4 min-w-0">
+                            <div className="text-center shrink-0">
+                              <p className="text-[10px] text-secondary uppercase">CRN</p>
+                              <p className="font-mono font-bold text-on-surface text-sm">{s.courseReferenceNumber}</p>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-on-surface text-sm truncate">{instructor}</p>
+                              <p className="text-xs text-secondary truncate">
+                                {days} · {time}{location ? ` · ${location}` : ''}
+                              </p>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <p className="font-medium text-on-surface text-sm truncate">{instructor}</p>
-                            <p className="text-xs text-secondary truncate">
-                              {days} · {time}{location ? ` · ${location}` : ''}
-                            </p>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <div className="text-right">
+                              <p className="text-[10px] text-secondary uppercase">Seats</p>
+                              <p className="font-bold text-on-surface text-sm">{s.seatsAvailable}/{s.maximumEnrollment}</p>
+                            </div>
+                            {s.waitCount > 0 && (
+                              <div className="text-right">
+                                <p className="text-[10px] text-secondary uppercase">Waitlist</p>
+                                <p className="font-bold text-amber-600 text-sm">{s.waitCount}</p>
+                              </div>
+                            )}
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${gauge.badge}`}>
+                              {gauge.label}
+                            </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <div className="text-right">
-                            <p className="text-[10px] text-secondary uppercase">Seats</p>
-                            <p className="font-bold text-on-surface text-sm">{s.seatsAvailable}/{s.maximumEnrollment}</p>
-                          </div>
-                          {s.waitCount > 0 && (
-                            <div className="text-right">
-                              <p className="text-[10px] text-secondary uppercase">Waitlist</p>
-                              <p className="font-bold text-amber-600 text-sm">{s.waitCount}</p>
-                            </div>
-                          )}
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${open ? 'bg-green-50 text-green-700' : s.waitCount > 0 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>
-                            {open ? 'Open' : s.waitCount > 0 ? 'Waitlisted' : 'Full'}
-                          </span>
+                        {/* Fill gauge bar */}
+                        <div className={`h-1.5 rounded-full overflow-hidden ${gauge.track}`}>
+                          <div
+                            className={`h-full rounded-full transition-all ${gauge.bar}`}
+                            style={{ width: `${Math.max(2, Math.min(100, fillPct))}%` }}
+                          />
                         </div>
                       </div>
                     )

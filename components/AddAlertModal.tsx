@@ -41,11 +41,11 @@ export default function AddAlertModal({ userEmail, isPro, alertCount }: Props) {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-primary-container rounded-lg flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-white" style={{ fontSize: 18, fontVariationSettings: "'FILL' 1" }}>notifications_active</span>
+                  <span className="material-symbols-outlined text-white" style={{ fontSize: 18, fontVariationSettings: "'FILL' 1" }}>bookmark_add</span>
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-on-surface leading-tight">Track a new course</h2>
-                  <p className="text-xs text-secondary">Alert sent to {userEmail}</p>
+                  <h2 className="text-sm font-bold text-on-surface leading-tight">Add to watchlist</h2>
+                  <p className="text-xs text-secondary">Tracking for {userEmail}</p>
                 </div>
               </div>
               <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600">

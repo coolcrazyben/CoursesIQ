@@ -24,19 +24,9 @@ export type Alert = {
 }
 
 export type SeatsInfo = { available: number; max: number }
+export type Snapshot  = { position: number; total: number | null; recorded_at: string }
 
-function calcProbability(pos: number | null, total: number | null): { label: 'LIKELY' | 'STABLE' | 'UNLIKELY' | 'UNKNOWN'; pct: number } {
-  if (!pos) return { label: 'UNKNOWN', pct: 0 }
-  const ratio = total ? pos / total : null
-  if (ratio !== null) {
-    if (ratio <= 0.2) return { label: 'LIKELY',   pct: Math.max(75, Math.round(95 - ratio * 50)) }
-    if (ratio <= 0.55) return { label: 'STABLE',  pct: Math.round(65 - ratio * 40) }
-    return { label: 'UNLIKELY', pct: Math.max(5, Math.round(30 - (ratio - 0.55) * 60)) }
-  }
-  if (pos <= 3) return { label: 'LIKELY',   pct: 90 }
-  if (pos <= 8) return { label: 'STABLE',   pct: 55 }
-  return { label: 'UNLIKELY', pct: 18 }
-}
+import { calcProbability } from '@/lib/probability'
 
 function toPeriodEndISO(val: unknown): string | null {
   if (typeof val === 'number') return new Date(val * 1000).toISOString()
@@ -119,6 +109,41 @@ async function fetchSeatsMap(alerts: Alert[]): Promise<Record<string, SeatsInfo>
   return seatsMap
 }
 
+async function fetchDFWMap(alerts: Alert[]): Promise<Record<string, number>> {
+  const pairs = [...new Set(alerts.map(a => `${a.subject}|${a.course_number}`))]
+  if (!pairs.length) return {}
+  const dfwMap: Record<string, number> = {}
+  for (const pair of pairs) {
+    const [subject, course_number] = pair.split('|')
+    const { data } = await adminClient
+      .from('grade_distributions')
+      .select('d_count, f_count, w_count, total_students')
+      .eq('subject', subject)
+      .eq('course_number', course_number)
+    if (!data?.length) continue
+    const total = data.reduce((s, r) => s + (r.total_students ?? 0), 0)
+    const dfw   = data.reduce((s, r) => s + (r.d_count ?? 0) + (r.f_count ?? 0) + (r.w_count ?? 0), 0)
+    if (total > 0) dfwMap[pair] = dfw / total
+  }
+  return dfwMap
+}
+
+async function fetchSnapshotsMap(alerts: Alert[]): Promise<Record<string, Snapshot[]>> {
+  const ids = alerts.map(a => a.id)
+  if (!ids.length) return {}
+  const { data } = await adminClient
+    .from('waitlist_snapshots')
+    .select('alert_id, position, total, recorded_at')
+    .in('alert_id', ids)
+    .order('recorded_at', { ascending: true })
+  const map: Record<string, Snapshot[]> = {}
+  for (const row of data ?? []) {
+    if (!map[row.alert_id]) map[row.alert_id] = []
+    map[row.alert_id].push({ position: row.position, total: row.total ?? null, recorded_at: row.recorded_at })
+  }
+  return map
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -144,9 +169,17 @@ export default async function DashboardPage({
     .order('created_at', { ascending: false })
 
   const alerts: Alert[] = data ?? []
-  const seatsMap = await fetchSeatsMap(alerts)
+  const [seatsMap, dfwMap, snapshotsMap] = await Promise.all([
+    fetchSeatsMap(alerts),
+    fetchDFWMap(alerts),
+    fetchSnapshotsMap(alerts),
+  ])
 
-  const probs = alerts.map(a => calcProbability(a.waitlist_position, a.waitlist_total))
+  const probs = alerts.map(a => {
+    const dfwRate  = dfwMap[`${a.subject}|${a.course_number}`] ?? null
+    const maxEnroll = a.crn ? seatsMap[a.crn]?.max : null
+    return calcProbability(a.waitlist_position, a.waitlist_total, maxEnroll, dfwRate)
+  })
   const likelyCount   = probs.filter(p => p.label === 'LIKELY').length
   const unlikelyCount = probs.filter(p => p.label === 'UNLIKELY').length
 
@@ -206,7 +239,7 @@ export default async function DashboardPage({
             <span className="text-xs text-secondary">Live</span>
           </div>
         </div>
-        <DashboardAlerts alerts={alerts} seatsMap={seatsMap} />
+        <DashboardAlerts alerts={alerts} seatsMap={seatsMap} dfwMap={dfwMap} snapshotsMap={snapshotsMap} />
       </div>
 
       {/* How likelihood is calculated */}

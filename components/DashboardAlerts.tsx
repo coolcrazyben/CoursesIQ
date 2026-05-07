@@ -1,22 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import type { Alert, SeatsInfo } from '@/app/(app)/dashboard/page'
-
-type ProbLabel = 'LIKELY' | 'STABLE' | 'UNLIKELY' | 'UNKNOWN'
-
-function calcProbability(pos: number | null, total: number | null): { label: ProbLabel; pct: number } {
-  if (!pos) return { label: 'UNKNOWN', pct: 0 }
-  const ratio = total ? pos / total : null
-  if (ratio !== null) {
-    if (ratio <= 0.2)  return { label: 'LIKELY',   pct: Math.max(75, Math.round(95 - ratio * 50)) }
-    if (ratio <= 0.55) return { label: 'STABLE',   pct: Math.round(65 - ratio * 40) }
-    return               { label: 'UNLIKELY', pct: Math.max(5, Math.round(30 - (ratio - 0.55) * 60)) }
-  }
-  if (pos <= 3) return { label: 'LIKELY',   pct: 90 }
-  if (pos <= 8) return { label: 'STABLE',   pct: 55 }
-  return              { label: 'UNLIKELY', pct: 18 }
-}
+import type { Alert, SeatsInfo, Snapshot } from '@/app/(app)/dashboard/page'
+import { calcProbability, type ProbLabel } from '@/lib/probability'
 
 const PROB_STYLES: Record<ProbLabel, { bar: string; text: string; bg: string; icon: string }> = {
   LIKELY:   { bar: 'bg-green-500',  text: 'text-green-600',  bg: 'bg-green-50',  icon: 'trending_up'   },
@@ -106,9 +92,11 @@ function SeatsBadge({ seats }: { seats: SeatsInfo | undefined }) {
 interface Props {
   alerts: Alert[]
   seatsMap: Record<string, SeatsInfo>
+  dfwMap: Record<string, number>
+  snapshotsMap: Record<string, Snapshot[]>
 }
 
-export default function DashboardAlerts({ alerts: initial, seatsMap }: Props) {
+export default function DashboardAlerts({ alerts: initial, seatsMap, dfwMap, snapshotsMap }: Props) {
   const [alerts, setAlerts]       = useState<Alert[]>(initial)
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const [cancelError,  setCancelError]  = useState<string | null>(null)
@@ -134,7 +122,7 @@ export default function DashboardAlerts({ alerts: initial, seatsMap }: Props) {
       <div className="py-16 text-center">
         <span className="material-symbols-outlined text-gray-300 text-5xl mb-3 block">hourglass_empty</span>
         <p className="font-medium text-gray-700 mb-1">No tracked courses</p>
-        <p className="text-sm text-secondary">Set up an alert to start tracking a waitlisted course.</p>
+        <p className="text-sm text-secondary">Add a course to your watchlist to start tracking.</p>
       </div>
     )
   }
@@ -149,12 +137,26 @@ export default function DashboardAlerts({ alerts: initial, seatsMap }: Props) {
         {alerts.map(alert => {
           const isSection = Boolean(alert.crn && alert.crn !== '' && alert.section_number)
           const seats = isSection && alert.crn ? seatsMap[alert.crn] : undefined
-          const { label, pct } = calcProbability(alert.waitlist_position, alert.waitlist_total)
+          const dfwRate   = dfwMap[`${alert.subject}|${alert.course_number}`] ?? null
+          const maxEnroll = alert.crn ? seatsMap[alert.crn]?.max : null
+          const { label, pct } = calcProbability(alert.waitlist_position, alert.waitlist_total, maxEnroll, dfwRate)
           const s = PROB_STYLES[label]
           const isConfirming = confirmingId === alert.id
           const barWidth = alert.waitlist_position && alert.waitlist_total
             ? Math.round((alert.waitlist_position / alert.waitlist_total) * 100)
             : 0
+          const snapshots = snapshotsMap[alert.id] ?? []
+          const trend = snapshots.length >= 2
+            ? (() => {
+                const first = snapshots[0]
+                const last  = snapshots[snapshots.length - 1]
+                const delta = first.position - last.position
+                const days  = Math.max(1, Math.round(
+                  (new Date(last.recorded_at).getTime() - new Date(first.recorded_at).getTime()) / 86_400_000
+                ))
+                return { delta, days }
+              })()
+            : null
 
           return (
             <div key={alert.id} className="flex items-center gap-4 px-6 py-5">
@@ -183,7 +185,19 @@ export default function DashboardAlerts({ alerts: initial, seatsMap }: Props) {
                 </div>
                 {isSection
                   ? <div className="mt-1"><SeatsBadge seats={seats} /></div>
-                  : <PositionEditor alert={alert} onSave={updatePosition} />
+                  : (
+                    <>
+                      <PositionEditor alert={alert} onSave={updatePosition} />
+                      {trend && trend.delta !== 0 && (
+                        <p className={`text-[11px] mt-1 flex items-center gap-1 ${trend.delta > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 12 }}>
+                            {trend.delta > 0 ? 'trending_up' : 'trending_down'}
+                          </span>
+                          {Math.abs(trend.delta)} spot{Math.abs(trend.delta) !== 1 ? 's' : ''} {trend.delta > 0 ? 'up' : 'down'} in {trend.days} day{trend.days !== 1 ? 's' : ''}
+                        </p>
+                      )}
+                    </>
+                  )
                 }
               </div>
 

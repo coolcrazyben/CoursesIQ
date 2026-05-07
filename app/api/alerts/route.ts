@@ -45,6 +45,16 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Record a snapshot whenever the user saves a non-null position (data collection for trend)
+  if (typeof waitlist_position === 'number' && waitlist_position > 0) {
+    await adminClient.from('waitlist_snapshots').insert({
+      alert_id: id,
+      position: waitlist_position,
+      total: typeof waitlist_total === 'number' && waitlist_total > 0 ? waitlist_total : null,
+    })
+  }
+
   return NextResponse.json({ ok: true })
 }
 

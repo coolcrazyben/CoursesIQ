@@ -7,6 +7,8 @@ import type { Schedule, ScheduleCourse } from '@/app/(app)/planner/page'
 import type { MeetingTime } from '@/lib/banner'
 import WeeklyCalendar from '@/components/WeeklyCalendar'
 import CourseSummaryPanel from '@/components/CourseSummaryPanel'
+import AlternativesModal from '@/components/AlternativesModal'
+import type { AlternativeSection } from '@/components/AlternativesModal'
 
 interface Props {
   initialSchedules: Schedule[]
@@ -127,6 +129,9 @@ export default function PlannerClient({ initialSchedules, initialCourses, userId
   // Paywall modal
   const [paywallOpen, setPaywallOpen] = useState(false)
 
+  // Alternatives modal
+  const [altCourse, setAltCourse] = useState<{ id: string; subject: string; course_number: string; crn: string | null } | null>(null)
+
   // Modal state
   const [addModalOpen, setAddModalOpen]       = useState(false)
   const [modalStep, setModalStep]             = useState<1 | 2>(1)
@@ -224,6 +229,25 @@ export default function PlannerClient({ initialSchedules, initialCourses, userId
   async function removeCourse(id: string) {
     await supabase.from('schedule_courses').delete().eq('id', id)
     setCourses(prev => prev.filter(c => c.id !== id))
+  }
+
+  async function swapSection(oldId: string, subject: string, courseNumber: string, sec: AlternativeSection) {
+    if (!selectedId) return
+    await supabase.from('schedule_courses').delete().eq('id', oldId)
+    setCourses(prev => prev.filter(c => c.id !== oldId))
+    const { data, error } = await supabase
+      .from('schedule_courses')
+      .insert({
+        schedule_id: selectedId,
+        subject,
+        course_number: courseNumber,
+        professor: sec.instructor,
+        crn: sec.crn,
+        meeting_times: sec.meetingTimes,
+        is_pending: true,
+      })
+      .select().single()
+    if (!error && data) setCourses(prev => [...prev, data])
   }
 
   function coursesFor(scheduleId: string) {
@@ -410,6 +434,7 @@ export default function PlannerClient({ initialSchedules, initialCourses, userId
             onPromote={promoteCourse}
             onRemove={removeCourse}
             onAdd={() => { setModalStep(1); setAddModalOpen(true) }}
+            onFindAlternatives={c => setAltCourse({ id: c.id, subject: c.subject, course_number: c.course_number, crn: c.crn ?? null })}
           />
         </div>
       )}
@@ -447,6 +472,18 @@ export default function PlannerClient({ initialSchedules, initialCourses, userId
             </button>
           </div>
         </div>
+      )}
+
+      {/* ── Alternatives Modal ── */}
+      {altCourse && selectedId && (
+        <AlternativesModal
+          subject={altCourse.subject}
+          courseNumber={altCourse.course_number}
+          scheduleId={selectedId}
+          currentCrn={altCourse.crn}
+          onSwap={sec => swapSection(altCourse.id, altCourse.subject, altCourse.course_number, sec)}
+          onClose={() => setAltCourse(null)}
+        />
       )}
 
       {/* ── Add Course Modal ── */}
@@ -566,12 +603,13 @@ export default function PlannerClient({ initialSchedules, initialCourses, userId
 // ─── Right panel ─────────────────────────────────────────────────────────────
 
 function RightPanel({
-  courses, onPromote, onRemove, onAdd,
+  courses, onPromote, onRemove, onAdd, onFindAlternatives,
 }: {
   courses: ScheduleCourse[]
   onPromote: (id: string) => void
   onRemove:  (id: string) => void
   onAdd:     () => void
+  onFindAlternatives: (course: ScheduleCourse) => void
 }) {
   const active  = courses.filter(c => !c.is_pending)
   const pending = courses.filter(c =>  c.is_pending)
@@ -640,12 +678,12 @@ function RightPanel({
                   </div>
 
                   {hasConflict ? (
-                    <Link
-                      href={`/course?subject=${encodeURIComponent(c.subject)}&number=${encodeURIComponent(c.course_number)}`}
+                    <button
+                      onClick={() => onFindAlternatives(c)}
                       className="block w-full text-center text-xs font-semibold py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-100 transition-colors"
                     >
                       Find Alternatives
-                    </Link>
+                    </button>
                   ) : (
                     <button
                       onClick={() => onPromote(c.id)}
